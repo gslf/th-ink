@@ -1,0 +1,7 @@
+{
+  "name": "th-ink/reminders",
+  "description": "Private Web Push delivery for th.ink",
+  "license": "MIT",
+  "require": {"php": ">=8.2", "minishlink/web-push": "^10.0"},
+  "config": {"vendor-dir": "../dist/api/vendor", "allow-plugins": false, "sort-packages": true}
+}

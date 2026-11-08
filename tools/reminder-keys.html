@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<title>th.ink — Private setup keys</title>
+<style>
+:root{font:16px/1.6 system-ui;color:#292820;background:#faf9f6;color-scheme:light}*{box-sizing:border-box}main{max-width:640px;margin:5vh auto;padding:24px}h1{letter-spacing:-.04em;line-height:1.2}label{display:block;margin:20px 0 6px;font-weight:600}button,textarea{font:inherit;border:1px solid #d5d2c8;border-radius:10px;padding:12px;width:100%}button{background:#eed484;color:inherit;cursor:pointer;margin-top:12px;min-height:48px}textarea{font:13px/1.6 ui-monospace,monospace;resize:vertical;background:white;overflow-wrap:anywhere}small{display:block;color:#656258;margin-top:8px}[hidden]{display:none}button:focus-visible,textarea:focus-visible{outline:3px solid #8a6900;outline-offset:3px}
+</style>
+<main>
+<h1>th.ink / private keys</h1>
+<p>Open this file locally in your browser. It works offline, sends nothing and stores nothing. Generate a different key for each purpose.</p>
+<button id="generate" type="button">Generate a new key</button>
+<p id="error" role="alert"></p>
+<section id="result" hidden>
+<label for="key">Secret key — save in your password manager</label>
+<textarea id="key" rows="2" readonly spellcheck="false" autocomplete="off"></textarea>
+<small>For setup, enter this on the HTTPS setup page. For cron rotation, use it as the X-Cron-Secret header in cron-job.org. Never put it in a URL or upload it in a config file.</small>
+<label for="config">First installation — upload this as private config.php</label>
+<textarea id="config" rows="4" readonly spellcheck="false" autocomplete="off"></textarea>
+<small>Place the file in think-private, beside www. This contains only the SHA-256 verifier of your random 256-bit key.</small>
+<label for="digest">Verifier — for password reset or cron rotation only</label>
+<textarea id="digest" rows="2" readonly spellcheck="false" autocomplete="off"></textarea>
+<small>When resetting the owner password, use this as setup_key_hash in the existing private config. When rotating cron, use cron_secret_hash. Preserve the other settings; do not replace an existing configuration with the first-installation example above.</small>
+</section>
+</main>
+<script>
+'use strict';
+document.getElementById('generate').addEventListener('click', async () => {
+ const result=document.getElementById('result');result.hidden=true;
+ document.getElementById('error').textContent='';
+ try {
+  const key=Array.from(crypto.getRandomValues(new Uint8Array(32)),x=>x.toString(16).padStart(2,'0')).join('');
+  const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(key))),x=>x.toString(16).padStart(2,'0')).join('');
+  document.getElementById('key').value=key;
+  document.getElementById('digest').value=digest;
+  document.getElementById('config').value="<?php\nreturn ['setup_key_hash' => '"+digest+"'];\n";
+  result.hidden=false;
+ }catch{document.getElementById('error').textContent='Open this file locally in a current browser with Web Crypto support.';}
+});
+window.addEventListener('pagehide',()=>{for(const id of ['key','digest','config'])document.getElementById(id).value='';document.getElementById('result').hidden=true;});
+</script>
+</html>

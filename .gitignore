@@ -1,0 +1,95 @@
+# Dependencies and package-manager caches
+node_modules/
+.npm/
+.pnpm-store/
+.yarn/cache/
+
+# Local settings, credentials, and hosting metadata
+.env
+.env.*
+!.env.example
+.openai/
+.codex/
+.agents/
+.aws/
+*.pem
+*.key
+
+# Downloaded speech models and generated third-party bundles
+**/dist/models/*.tar.gz
+**/dist/vendor/
+
+# Generated test reports, coverage, and preview screenshots
+**/tests/reports/
+coverage/
+.nyc_output/
+preview-*.jpg
+preview-*.png
+
+# Build intermediates and Python caches
+*.o
+*.obj
+__pycache__/
+*.py[cod]
+.venv/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.swp
+*.swo
+*~
+
+# Editor and operating-system files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Keep dist/: it contains the application's maintained source files.
+
+# Private reminder deployment data
+think-private/
+*.sqlite*
+server/config.php
+
+# Rebuilt locally with server/composer.lock, then uploaded to OVH
+/dist/api/vendor/
+
+# Private configuration, authentication stores, and local certificates
+config.php
+config.local.*
+auth.json
+credentials.json
+credentials-*.json
+.npmrc
+.netrc
+.pypirc
+.ssh/
+id_rsa*
+id_ed25519*
+*.p12
+*.pfx
+*.keystore
+*.jks
+
+# Sessions, database snapshots, archives, and personal exports
+sess_*
+*.db
+*.db-*
+*.sqlite*
+*.sql
+*.dump
+*.bak
+*.bak.*
+*.backup
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+backups/
+exports/
+deployment/
+.think-check-*

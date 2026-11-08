@@ -1,0 +1,46 @@
+{
+  "name": "th-ink",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "build": "node scripts/build.mjs",
+    "test": "node --test --test-isolation=none tests/*.test.mjs",
+    "test:browser": "node scripts/serve.mjs --qa",
+    "benchmark": "node scripts/benchmark.mjs",
+    "setup:voice": "python3 scripts/setup-voice.py",
+    "test:e2e": "node tests/i18n-browser.mjs",
+    "test:ui": "node tests/ui-browser.mjs",
+    "test:focus": "node tests/focus-browser.mjs",
+    "test:voice:csp": "node tests/voice-csp-browser.mjs",
+    "test:voice:ui": "node tests/voice-mode-browser.mjs",
+    "test:editor": "node tests/editor-browser.mjs",
+    "test:lists": "node tests/lists-browser.mjs",
+    "test:shortcuts": "node tests/shortcuts-browser.mjs",
+    "test:properties": "node tests/properties-browser.mjs",
+    "test:tags:performance": "node tests/tags-performance-browser.mjs",
+    "test:emoji": "node tests/emoji-browser.mjs",
+    "test:publish": "node tests/publish-browser.mjs"
+  },
+  "dependencies": {
+    "@codemirror/commands": "6.11.1",
+    "@codemirror/lang-markdown": "6.5.2",
+    "@codemirror/language": "6.13.1",
+    "@codemirror/state": "6.7.6",
+    "@codemirror/view": "6.43.15",
+    "@filen/sdk": "0.4.2",
+    "@lezer/highlight": "1.2.5"
+  },
+  "devDependencies": {
+    "emojibase-data": "18.0.0",
+    "esbuild": "0.28.2",
+    "esbuild-plugin-polyfill-node": "0.3.0",
+    "playwright": "1.65.0"
+  },
+  "overrides": {
+    "axios": "0.35.0",
+    "elliptic": "6.6.1"
+  },
+  "license": "MIT"
+}

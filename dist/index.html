@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="script-src 'self' 'sha256-sgC96f9zINcf4XEYalNUJu+cIXbE7yPWjxToe25rGgQ=' 'wasm-unsafe-eval'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'"><meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content, viewport-fit=cover"><meta name="theme-color" content="#faf9f6"><meta name="description" content="th.ink — spazio al pensiero. Note Markdown locali, essenziali, tue."><title>th.ink — spazio al pensiero</title><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./assets/icon.svg" type="image/svg+xml"><link rel="icon" type="image/x-icon" sizes="16x16 32x32 48x48" href="./assets/favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon-180.png"><link rel="apple-touch-icon" sizes="167x167" href="./assets/apple-touch-icon-167.png"><link rel="apple-touch-icon" sizes="152x152" href="./assets/apple-touch-icon-152.png">
+<link rel="mask-icon" href="./assets/safari-pinned-tab.svg" color="#242420">
+<meta name="application-name" content="th.ink"><meta name="apple-mobile-web-app-title" content="th.ink"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><script>try{const t=localStorage.getItem('th-ink-theme')||'auto';document.documentElement.dataset.theme=(t==='dark'||t==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';}catch{document.documentElement.dataset.theme=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}</script><link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<a class="skip" href="#editor">Vai alla scrittura</a>
+<div class="app" id="app">
+<aside class="sidebar" id="sidebar" aria-label="Archivio">
+<div class="brand-row"><button id="close-library" aria-label="Chiudi archivio"><svg class="menu-glyph menu-glyph-close" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path class="menu-line menu-line-top" d="M3 6h18"/><path class="menu-line menu-line-middle" d="M3 12h12"/><path class="menu-line menu-line-bottom" d="M3 18h18"/></svg></button> <a class="brand" href="./" aria-label="th.ink, pagina iniziale">th<span>.</span>ink</a></div>
+ 
+ <button class="new-note" data-action="new"><span>Nuova nota</span><span aria-hidden="true">＋</span></button>
+ <button class="search-trigger" data-action="search"><span>⌕ &nbsp; Cerca</span><kbd>⌘ K</kbd></button>
+ <nav class="main-nav" aria-label="Raccolte">
+  <button data-filter="all" class="active"><span>▤ &nbsp; Tutte le note</span><span id="all-count">0</span></button>
+  <button data-filter="pinned"><span>☆ &nbsp; Preferite</span><span id="pin-count">0</span></button>
+  <button data-filter="tags"><span>Tags</span><span id="tag-count">0</span></button>
+  <button data-filter="reminders"><span>Reminders</span><span id="reminder-count">0</span></button>
+ </nav>
+ <div class="section-label"><span id="tree-heading">ARCHIVIO</span><div><button id="sort" title="Ordina per titolo" aria-label="Ordina per titolo"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="12" r="6"/><path d="M8 8.5V12l2.5 1.5M19 4v16m-3-3 3 3 3-3"/></svg></button><button id="add-folder" aria-label="Nuova cartella">＋</button></div></div>
+ <ul id="note-tree" class="note-tree" role="tree" aria-label="Cartelle e note"></ul>
+ <div id="reminder-list" class="reminder-list" hidden></div>
+ <div class="sidebar-bottom">
+  <button data-filter="trash" class="quiet-button">⌫ &nbsp; Cestino</button>
+  <button data-action="settings" class="quiet-button">⚙ &nbsp; Preferenze</button>
+  <span id="offline-state" class="offline-state"></span>
+  
+ </div>
+</aside>
+<main class="workspace" id="workspace">
+ <header class="editor-topbar">
+  <div class="breadcrumb"><button id="library-toggle" aria-label="Apri archivio" aria-controls="sidebar" aria-expanded="false"><svg class="menu-glyph" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path class="menu-line menu-line-top" d="M3 6h18"/><path class="menu-line menu-line-middle" d="M3 12h12"/><path class="menu-line menu-line-bottom" d="M3 18h18"/></svg></button><span class="brand brand-mini" role="img" aria-label="th.ink">th<span>.</span></span><span id="breadcrumb">Appunti</span><span id="file-label" hidden>.md</span></div>
+  <div class="top-actions"><span id="save-state" role="status">Salvato</span><button data-action="focus" title="Concentrazione · Ctrl Shift F" aria-label="Modalità concentrazione">⛶</button></div>
+ </header>
+ <aside id="setup-toast" class="setup-toast" aria-label="Suggerimento" hidden><button id="setup-action" class="primary" aria-describedby="setup-message"></button><p id="setup-message" role="status" aria-live="polite"></p><button id="setup-dismiss" aria-label="Non ora">×</button></aside>
+ <div class="document-scroll" id="document-scroll">
+  <div class="document" id="document">
+   <div class="document-meta"><button id="note-properties" data-action="properties" aria-label="Proprietà della nota" title="Emoji e tag"></button><span id="note-date"></span><button id="pin-note" aria-label="Aggiungi ai preferiti">☆</button></div>
+   <textarea id="note-title" class="note-title" aria-label="Titolo della nota" placeholder="Senza titolo" autocomplete="off" rows="1"></textarea>
+   <div class="document-tabs"><div role="group" aria-label="Visualizzazione nota"><button id="write-tab" class="selected" aria-pressed="true">Scrivi</button><button id="preview-tab" aria-pressed="false">Leggi</button></div><div id="note-tags" class="note-tags"></div><span id="folder-label" hidden>Appunti</span></div>
+   <div class="editor-surface" id="editor-surface"><div id="editor" aria-label="Contenuto Markdown della nota"></div></div>
+   <article id="preview" class="markdown" hidden></article>
+   <div id="empty-state" hidden><h2>Uno spazio tutto tuo.</h2><p>Crea una nota. Il resto può aspettare.</p><button data-action="new" class="primary">Scrivi il primo pensiero ↗</button></div>
+  </div>
+ </div>
+ <div class="format-bar" role="toolbar" aria-label="Formattazione Markdown" tabindex="-1">
+  <div class="heading-control"><button id="heading-toggle" title="Titolo" aria-label="Titolo" aria-expanded="false" aria-controls="heading-menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4v16M18 4v16M6 12h12"/></svg></button><div id="heading-menu" hidden role="group" aria-label="Titolo Markdown"><button data-action="heading" data-level="1">H1</button><button data-action="heading" data-level="2">H2</button><button data-action="heading" data-level="3">H3</button><button data-action="heading" data-level="4">H4</button></div></div><button data-action="bold" title="Grassetto · Ctrl B" aria-label="Grassetto"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h6a4 4 0 0 1 0 8H6Zm0 8h7a4 4 0 0 1 0 8H6Z"/></svg></button><button data-action="italic" title="Corsivo · Ctrl I" aria-label="Corsivo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4h8M5 20h8M15 4 9 20"/></svg></button><span class="separator"></span><button data-action="bullet" title="Elenco" aria-label="Elenco"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="5" r="1" fill="currentColor" stroke="none"/><circle cx="5" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="5" cy="19" r="1" fill="currentColor" stroke="none"/><path d="M10 5h10M10 12h10M10 19h10"/></svg></button><button data-action="task" title="Lista di attività" aria-label="Lista di attività"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="m8 12 3 3 6-6"/></svg></button><button data-action="link" title="Collegamento" aria-label="Collegamento"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 8 3-3a4.25 4.25 0 0 1 6 6l-3 3M14 16l-3 3a4.25 4.25 0 0 1-6-6l3-3M8 16l8-8"/></svg></button><button data-action="reminder" title="Inserisci reminder" aria-label="Inserisci reminder"></button><button data-action="code" title="Codice" aria-label="Codice"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 7-4 5 4 5m8-10 4 5-4 5M14 4l-4 16"/></svg></button><span class="separator"></span><button data-action="undo" title="Annulla modifica" aria-label="Annulla modifica"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 4-5 5 5 5M3 9h10a7 7 0 0 1 7 7v4"/></svg></button><button data-action="redo" title="Ripeti" aria-label="Ripeti"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m16 4 5 5-5 5M21 9H11a7 7 0 0 0-7 7v4"/></svg></button>
+ </div>
+ <footer class="editor-footer">
+  <span id="word-count">0 parole</span>
+  <div class="mode-switch" role="group" aria-label="Modalità di input"><button data-mode="keyboard" class="selected" aria-pressed="true">Scrivi</button><button data-mode="voice" aria-label="Voce" aria-pressed="false"><svg class="voice-command" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 6 6 6-6 6m9 0h5"/></svg>Voce<span id="voice-underline" class="voice-meter" role="meter" aria-label="Livello del microfono" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0"><span></span></span></button></div>
+  <button class="shortcut-button" data-action="palette" aria-label="Comandi" title="Comandi · Ctrl X" aria-keyshortcuts="Control+X Meta+X"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="m7 9 3 3-3 3m6 0h4"/></svg><span>C-x</span></button>
+  <div id="voice-dock" hidden><div id="voice-level" class="voice-meter" role="meter" aria-label="Livello del microfono" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0"><span></span></div><button id="voice-help" data-action="help" aria-label="Guida ai comandi vocali" title="Guida ai comandi vocali"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M9.7 9a2.4 2.4 0 0 1 4.6 1c0 1.5-2.3 1.7-2.3 3M12 16h.01"/></svg></button></div>
+  <span id="transcript" class="visually-hidden" aria-live="polite"></span>
+  <p id="voice-status" role="status" hidden></p>
+ </footer>
+</main>
+</div>
+<dialog id="palette" class="palette" aria-labelledby="palette-label"><div class="dialog-top"><span class="eyebrow" id="palette-label">COMANDI</span><button data-close aria-label="Chiudi">×</button></div><input id="palette-input" role="combobox" aria-autocomplete="list" aria-controls="palette-results" aria-expanded="false" aria-label="Cerca comandi o note" placeholder="Cosa vuoi fare?" autocomplete="off"><div id="palette-results" class="palette-results" role="listbox" aria-label="Comandi"></div><div class="palette-footer"><span>↑ ↓ per navigare &nbsp; ↵ per scegliere</span><span id="search-time"></span></div></dialog>
+<dialog id="modal" class="modal" aria-labelledby="modal-title"><div class="dialog-top"><span class="eyebrow">TH.INK</span><button data-close aria-label="Chiudi">×</button></div><div id="modal-content"></div></dialog>
+<div id="toast" class="toast" role="status" hidden></div>
+<input id="import-files" type="file" accept=".md,.markdown,.txt,.json,text/markdown,text/plain,application/json" multiple hidden><input id="import-directory" type="file" webkitdirectory multiple hidden>
+<script type="module" src="./js/app.js"></script>
+</body></html>

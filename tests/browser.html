@@ -1,0 +1,26 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>th.ink — local checks</title><style>body{font:16px/1.8 system-ui;padding:40px;background:#f9f8f4;color:#292e29}li{padding:5px} .ok{color:#3f5844}.fail{color:#a22}</style><h1>Local th.ink checks</h1><ol id="results"></ol><p id="summary">Running…</p><script type="module">
+import {Storage} from './js/storage.js';import {markdown} from './js/core.js';
+const results=document.querySelector('#results');let passed=0,failed=0;
+async function check(name,fn){try{await fn();passed++;const li=document.createElement('li');li.className='ok';li.textContent='PASS — '+name;results.append(li);}catch(e){failed++;const li=document.createElement('li');li.className='fail';li.textContent='FAIL — '+name+': '+e.message;results.append(li);}}
+const assert=(condition,message)=>{if(!condition)throw Error(message);};
+const name='think-qa-'+crypto.randomUUID(),db=await new Storage().open(name),n={id:crypto.randomUUID(),title:'Caffè italiano',body:'Primo paragrafo.\n\nEnglish paragraph.',created:Date.now(),updated:Date.now(),folder:null};
+await check('IndexedDB: save and read back Markdown',async()=>{await db.saveNote(n);const read=await db.get('notes',n.id);assert(read.body===n.body&&read.title===n.title,'Text differs');});
+await check('OPFS: plain .md file matches the note',async()=>{assert(!!db.files,'OPFS unavailable');const file=await(await db.files.getFileHandle(n.id+'.md')).getFile();assert(await file.text()===markdown(n),'File differs');});
+await check('History: 30 versions, ordering, and deduplication',async()=>{for(let i=0;i<35;i++)await db.revision({...n,body:'versione '+i});await db.revision({...n,body:'versione 34'});const h=await db.get('history',n.id);assert(h.items.length===30,'Incorrect version count');assert(h.items[0].body==='versione 5'&&h.items.at(-1).body==='versione 34','Incorrect order');});
+await check('Reopened database: persistence',async()=>{db.db.close();await db.open(name);assert((await db.get('notes',n.id)).body===n.body,'Note lost');});
+await check('Service worker: entire offline core is available',async()=>{await navigator.serviceWorker.register('./sw.js');await navigator.serviceWorker.ready;const keys=await caches.keys();const cache=await caches.open(keys.find(k=>k.startsWith('th-ink-shell-')));for(const path of ['./','./js/app.js','./js/storage.js','./js/search-worker.js','./assets/search.wasm','./assets/icon-192.png','./vendor/filen/sdk.js','./js/daily-backup.js','./js/backup-worker.js'])assert(!!await cache.match(path),'Missing '+path);});
+await check('Archive upgrade: removes obsolete connections, preserves notes and settings',async()=>{
+ for(const version of [1,2]){
+ const legacyName='think-migration-qa-'+crypto.randomUUID();
+ const legacy=await new Promise((resolve,reject)=>{const r=indexedDB.open(legacyName,version);r.onupgradeneeded=()=>{for(const name of ['notes','folders','history','settings'])r.result.createObjectStore(name,{keyPath:'id'});};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});
+ const tx=legacy.transaction(['notes','folders','history','settings'],'readwrite');tx.objectStore('notes').put(n);tx.objectStore('folders').put({id:'folder',name:'Idee'});tx.objectStore('history').put({id:n.id,items:[{body:'Prima'}]});
+ for(const item of [{id:'device-folder',handle:db.root},{id:'device-file:old:note',entry:{hash:'old'}},{id:'cloud-sync',provider:'google',account:'test-account'},{id:'cloud-client-ids',google:'test-client'},{id:'theme',value:'dark'}])tx.objectStore('settings').put(item);
+ await new Promise((resolve,reject)=>{tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);});legacy.close();
+ const upgraded=await new Storage().open(legacyName);
+ try{assert(!(await upgraded.get('settings','cloud-sync')),'Obsolete connection remains');assert(!(await upgraded.get('settings','cloud-client-ids')),'Obsolete configuration remains');assert(!(await upgraded.get('settings','device-folder')),'Old handle retained');assert(!(await upgraded.get('settings','device-file:old:note')),'Obsolete metadata retained');assert((await upgraded.get('settings','theme')).value==='dark','Theme lost');assert((await upgraded.get('notes',n.id)).body===n.body,'Note lost');assert((await upgraded.get('folders','folder')).name==='Idee','Folder lost');assert((await upgraded.get('history',n.id)).items[0].body==='Prima','History lost');}
+ finally{upgraded.db.close();await new Promise((resolve,reject)=>{const r=indexedDB.deleteDatabase(legacyName);r.onsuccess=resolve;r.onerror=()=>reject(r.error);});}
+ }
+});
+await check('Clean up test data only',async()=>{await db.files?.removeEntry(n.id+'.md');db.db.close();await new Promise((resolve,reject)=>{const r=indexedDB.deleteDatabase(name);r.onsuccess=resolve;r.onerror=()=>reject(r.error);});});
+document.querySelector('#summary').textContent=`${passed} checks passed, ${failed} failures.`;
+</script></html>

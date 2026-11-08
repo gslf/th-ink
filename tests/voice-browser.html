@@ -1,0 +1,39 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>th.ink — local audio test</title><style>body{font:15px/1.65 system-ui;padding:32px;background:#f9f8f4;color:#292e29}button{padding:15px}pre{white-space:pre-wrap}.pass{color:#265b32}.fail{color:#9b342b}</style><h1>Local model audio test</h1><p>Synthetic Italian and English audio, no microphone or remote service. Includes the real WebAssembly ASR engine.</p><button id="run">Run local audio check</button><button id="navigation">Check new voice commands</button><select id="pipeline-language" aria-label="Pipeline language"><option value="it-IT">Italian</option><option value="en-US">English</option></select><button id="pipeline">Real VAD and AudioWorklet</button><p id="status">Ready</p><pre id="results"></pre><script type="module">
+import {LocalVoice} from '/js/voice.js';import {grammar,chooseTranscript,confidence} from '/js/voice-grammar.js';import {VoskEngine} from '/js/voice-engine.js';import {LocalSpeech} from '/js/speech-output.js';import {Resampler} from '/js/audio-pipeline.js';import {interpret,parseScreenless} from '/js/screenless.js';
+const status=document.querySelector('#status'),results=document.querySelector('#results');
+document.querySelector('#run').onclick=()=>runAudio(false);document.querySelector('#navigation').onclick=()=>runAudio(true);
+async function runAudio(navigation){
+ document.querySelector('#run').disabled=true;const engine=new VoskEngine(),speech=new LocalSpeech(),report=[];
+ try{
+  await navigator.serviceWorker.register('/sw.js');await navigator.serviceWorker.ready;
+  await speech.prepare(p=>status.textContent='Preparing synthesis '+p.stage+' '+Math.round((p.progress||0)*100)+'%');
+  for(const lang of ['it-IT','en-US']){
+   const start=performance.now();await engine.load(lang,p=>status.textContent=lang+' '+p.stage+' '+Math.round((p.progress||0)*100)+'%');
+   report.push({lang,loadMs:Math.round(performance.now()-start)});
+   const phrases=navigation?(lang==='it-IT'?["seleziona l’ultima frase del paragrafo",'spostati al paragrafo successivo','spostati tre frasi in avanti','seleziona due frasi successive']:['select the last sentence in the paragraph','move to the next paragraph','move three sentences forward','select the next two sentences','highlight the last sentence in the paragraph','highlight the next two sentences']):lang==='it-IT'?['modalità comando','cancella il paragrafo precedente','questa è una nota in italiano','seleziona paragrafo','ferma lettura']:['command mode','delete previous paragraph','this is a note in english','select paragraph','stop reading'];
+   for(const phrase of phrases){
+    status.textContent='Recognizing '+lang+': '+phrase;
+    const generated=await speech.request({type:'synthesize',text:phrase,lang,rate:155});
+    const samples=[];new Resampler(generated.sampleRate).push(generated.audio,s=>samples.push(s));samples.push(...new Float32Array(8000));
+    const pcm=Float32Array.from(samples),recognizer=engine.createRecognizer(),control=engine.createRecognizer(()=>{},grammar(lang,'commands'));let text='',words=[],controlled='',controlWords=[],firstPartial=null;const t=performance.now();
+    for(let offset=0;offset<pcm.length;offset+=1280){const segment=pcm.slice(offset,offset+1280);const c=await control.feed(segment);if(c.event==='result'){controlled+=' '+c.result.text;controlWords.push(...(c.result.result||[]));}const r=await recognizer.feed(segment);if(r.event==='result'){text+=' '+r.result.text;words.push(...(r.result.result||[]));}else if(r.result.partial&&firstPartial===null)firstPartial=performance.now()-t;}
+    const final=await recognizer.finish();text=(text+' '+final.result.text).trim();words.push(...(final.result.result||[]));const end=await control.finish();controlled=(controlled+' '+end.result.text).trim();controlWords.push(...(end.result.result||[]));const chosen=chooseTranscript({text,words},{text:controlled,words:controlWords},'commands');const elapsed=performance.now()-t;recognizer.dispose();control.dispose();
+    report.push({lang,expected:phrase,recognized:chosen.text,free:text,constrained:controlled,source:chosen.source,command:interpret(chosen.text,'commands').command||null,commandMatch:JSON.stringify(parseScreenless(chosen.text))===JSON.stringify(parseScreenless(phrase)),confidence:confidence(chosen.words),audioMs:Math.round(pcm.length/16),inferenceMs:Math.round(elapsed),rtf:+(elapsed/(pcm.length/16)).toFixed(3),firstPartialMs:Math.round(firstPartial||0)});results.textContent=JSON.stringify(report,null,2);
+   }
+  }
+  status.textContent=navigation?`Completed: ${report.filter(r=>r.expected&&r.commandMatch).length}/10 equivalent commands, real ASR on synthetic audio.`:'Completed: 10 phrases recognized with real engines. Compare expected and recognized text.';
+ }catch(e){status.textContent='ERROR: '+e.stack;}finally{engine.dispose();speech.dispose();document.querySelector('#run').disabled=false;}
+};
+document.querySelector('#pipeline').onclick=async()=>{
+ const button=document.querySelector('#pipeline');button.disabled=true;
+ const speech=new LocalSpeech(),input=new AudioContext(),destination=input.createMediaStreamDestination();
+ const voice=new LocalVoice({getStream:async()=>destination.stream});const lang=document.querySelector('#pipeline-language').value;voice.lang=lang;let timeout;
+ try{
+  status.textContent='Preparing audio pipeline';await input.resume();await speech.prepare();await voice.start();
+  const generated=await speech.request({type:'synthesize',text:lang==='it-IT'?'modalità comando':'command mode',lang,rate:155});
+  const recognized=new Promise((resolve,reject)=>{timeout=setTimeout(()=>reject(Error('No result after 15 seconds')),15000);voice.addEventListener('recognition',e=>resolve(e.detail),{once:true});voice.addEventListener('error',e=>reject(Error(e.detail)),{once:true});});
+  const buffer=input.createBuffer(1,generated.audio.length,generated.sampleRate);buffer.copyToChannel(generated.audio,0);const source=input.createBufferSource();source.buffer=buffer;source.connect(destination);source.start(input.currentTime+.2);
+  const detail=await recognized;results.textContent=JSON.stringify(detail,null,2);status.textContent=interpret(detail.text,'dictation').command?.id==='commands'?'PASS: audio → AudioWorklet → VAD → WASM → command':'FAIL: command not recognized';
+ }catch(e){status.textContent='Pipeline ERROR: '+e.stack;}finally{clearTimeout(timeout);voice.dispose();speech.dispose();await input.close();button.disabled=false;}
+};
+</script></html>

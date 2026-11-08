@@ -1,0 +1,6 @@
+# Revalidate release entry points; the PWA service worker owns offline caching.
+<IfModule mod_headers.c>
+ <FilesMatch "\.(html|js|css|webmanifest)$">
+  Header set Cache-Control "no-cache"
+ </FilesMatch>
+</IfModule>

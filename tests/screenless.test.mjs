@@ -1,0 +1,27 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {SpokenEditor} from '../dist/js/spoken-editor.js';
+function fixture(){let mode='commands',selection=[0,5],current={id:'n',title:'Test',body:'Primo\n\nSecondo',updated:1};const messages=[],calls=[];const adapter={language:()=> 'it-IT',mode:()=>mode,setMode:v=>mode=v,snapshot:()=>({note:{...current},selection:[...selection]}),say:async t=>messages.push(t),select:r=>selection=r,edit:(text,start=selection[0],end=selection[1])=>{current.body=current.body.slice(0,start)+text+current.body.slice(end);current.updated++;selection=[start+text.length,start+text.length];},execute:async(id,args)=>calls.push({id,args}),interrupt:id=>calls.push({id}),notes:()=>[{...current},{id:'b',title:'Altra nota',body:''}],open:async id=>calls.push({id:'open',value:id}),search:async()=>[{id:'n',label:'Test'}],folders:()=>[{id:'f',name:'Idee',label:'Idee'}],move:async id=>calls.push({id:'move',value:id}),create:async value=>calls.push({id:'new',value}),folder:async value=>calls.push({id:'folder',value}),read:async text=>calls.push({id:'read',text}),history:async()=>[{title:'Prima',body:'Versione vecchia',at:1}],restore:async v=>{current.body=v.body;current.updated++;},insert:async t=>calls.push({id:'insert',value:t})};
+ return {controller:new SpokenEditor(adapter),adapter,messages,calls,get note(){return current;},change:()=>current.updated++,selection:r=>selection=r};}
+test('guided replacement: collects fields, preview, confirmation, and commit',async()=>{const f=fixture();await f.controller.receive('trova e sostituisci');await f.controller.receive('primo');await f.controller.receive('Nuovo');assert.equal(f.note.body,'Primo\n\nSecondo');assert.match(f.messages.at(-1),/1 occorrenze/);await f.controller.receive('conferma');assert.equal(f.note.body,'Nuovo\n\nSecondo');});
+test('a changed selection invalidates confirmation',async()=>{const f=fixture();await f.controller.receive('modifica selezione');await f.controller.receive('Nuovo');f.selection([7,14]);await f.controller.receive('conferma');assert.equal(f.note.body,'Primo\n\nSecondo');assert.match(f.messages.at(-1),/Ripeti/);});
+test('cancellation, title prompt, and folder selection without modal dialogs',async()=>{const f=fixture();await f.controller.receive('nuova nota');await f.controller.receive('annulla comando');assert.equal(f.calls.length,0);await f.controller.receive('nuova nota');await f.controller.receive('Viaggio');assert.deepEqual(f.calls[0],{id:'new',value:'Viaggio'});await f.controller.receive('sposta nota');await f.controller.receive('scegli uno');assert.deepEqual(f.calls[1],{id:'move',value:'f'});});
+test('search and result selection by spoken number',async()=>{const f=fixture();await f.controller.receive('cerca');await f.controller.receive('Test');await f.controller.receive('scegli uno');assert.deepEqual(f.calls[0],{id:'open',value:'n'});});
+test('keyboard editing during a dialog invalidates its arguments',async()=>{const f=fixture();await f.controller.receive('modifica paragrafo');f.change();await f.controller.receive('Nuovo testo');assert.equal(f.controller.pending,null);assert.equal(f.note.body,'Primo\n\nSecondo');});
+test('dictated link, preview, and confirmation',async()=>{const f=fixture();await f.controller.receive('collegamento');await f.controller.receive('example punto com barra note');assert.match(f.messages.at(-1),/https:\/\/example.com\/note/);await f.controller.receive('conferma');assert.equal(f.note.body,'[Primo](https://example.com/note)\n\nSecondo');});
+test('interruption takes priority over reading still in progress',async()=>{const f=fixture();let release;f.adapter.read=()=>new Promise(r=>release=r);const reading=f.controller.receive('leggi nota');await new Promise(r=>setTimeout(r,0));await f.controller.receive('ferma lettura');assert.equal(f.calls[0].id,'stopReading');release();await reading;});
+test('history restoration with selection and confirmation',async()=>{const f=fixture();await f.controller.receive('cronologia');await f.controller.receive('scegli uno');assert.equal(f.note.body,'Primo\n\nSecondo');await f.controller.receive('conferma');assert.equal(f.note.body,'Versione vecchia');});
+test('sentence selection, confirmed editing, and navigation leave the rest intact',async()=>{
+ const f=fixture();f.note.body='Prima frase. Ultima frase!\n\nUn altro paragrafo.';f.selection([0,0]);
+ await f.controller.receive('seleziona l’ultima frase del paragrafo');
+ assert.deepEqual(f.adapter.snapshot().selection,[13,26]);
+ await f.controller.receive('modifica frase');await f.controller.receive('Frase corretta.');
+ assert.equal(f.note.body,'Prima frase. Ultima frase!\n\nUn altro paragrafo.');
+ await f.controller.receive('conferma');assert.equal(f.note.body,'Prima frase. Frase corretta.\n\nUn altro paragrafo.');
+ await f.controller.receive('spostati al paragrafo successivo');
+ const next=f.note.body.indexOf('Un altro');assert.deepEqual(f.adapter.snapshot().selection,[next,next]);
+});
+test('sentence deletion requires confirmation and a new selection invalidates the request',async()=>{
+ const f=fixture();f.note.body='Prima. Seconda.';f.selection([0,0]);
+ await f.controller.receive('cancella ultima frase');assert.ok(f.controller.pending);assert.equal(f.calls.length,0);
+ f.selection([0,0]);await f.controller.receive('conferma');assert.equal(f.calls.length,0);assert.equal(f.note.body,'Prima. Seconda.');
+});
