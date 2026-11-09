@@ -19,6 +19,7 @@
     "test:lists": "node tests/lists-browser.mjs",
     "test:shortcuts": "node tests/shortcuts-browser.mjs",
     "test:properties": "node tests/properties-browser.mjs",
+    "test:library": "node tests/library-browser.mjs",
     "test:tags:performance": "node tests/tags-performance-browser.mjs",
     "test:emoji": "node tests/emoji-browser.mjs",
     "test:publish": "node tests/publish-browser.mjs",

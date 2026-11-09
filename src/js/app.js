@@ -1,3 +1,4 @@
+import {mountLibrary} from './library-actions.js';
 import {createToast} from './toast.js';
 import {Publisher} from './publisher.js';
 import {publishSettings} from './publish-ui.js';
@@ -61,7 +62,7 @@ async function applySyncItem(item,expected){
  const operation=state.saveQueue.catch(()=>{}).then(async()=>{
   const current=currentSyncItem(item);if((current?signature(current):null)!==expected)return false;
   if(current&&signature(current)===signature(item))return true;
-  const {kind,...value}=item;
+  const {kind,...value}=item;value.trashGroup=value.trashGroup||null;if(kind==='folder')value.deleted=!!value.deleted;
   if(kind==='folder'){
    const ancestors=new Set([value.id]);let parent=value.parent;while(parent){if(ancestors.has(parent))throw Error(t('La struttura delle cartelle cloud contiene un ciclo.'));ancestors.add(parent);parent=state.folders.find(f=>f.id===parent)?.parent;}
    await db.put('folders',value);const old=state.folders.find(f=>f.id===value.id);if(old)Object.assign(old,value);else state.folders.push(value);
@@ -199,9 +200,10 @@ async function openNote(id){
  editor.setSelectionRange(0,0);setPreview(state.preview);count();renderNoteProperties();renderList();setLibrary(false,{restore:false});resize();$('#document-scroll').scrollTop=0;if(previousId!==id){$('#document').classList.remove('note-reveal');requestAnimationFrame(()=>$('#document').classList.add('note-reveal'));}
  if(n)await db.put('settings',{id:'last-note',value:id});
 }
-async function createNote(){
+async function createNote(parent){
  if(state.readOnly)return toast(t('Archivio aperto in un’altra finestra. Chiudila e ricarica per modificare.'));
- await flush();const n={id:uid(),title:'',body:'',folder:state.folders.some(f=>f.id===state.filter)?state.filter:null,created:Date.now(),updated:Date.now(),pinned:false,deleted:false};state.notes.push(n);scheduleSave(n);if(['trash','pinned','tags','reminders'].includes(state.filter))state.filter='all';refresh();await openNote(n.id);if(state.mode!=='voice')($('#app').classList.contains('focus')?editor:title).focus();
+ if(parent&&!state.folders.some(f=>f.id===parent&&!f.deleted))throw Error(t('Scegli una cartella disponibile.'));
+ await flush();const n={id:uid(),title:'',body:'',folder:parent===undefined?(state.folders.some(f=>f.id===state.filter&&!f.deleted)?state.filter:null):parent,created:Date.now(),updated:Date.now(),pinned:false,deleted:false};state.notes.push(n);scheduleSave(n);if(['trash','pinned','tags','reminders'].includes(state.filter))state.filter='all';refresh();await openNote(n.id);if(state.mode!=='voice')($('#app').classList.contains('focus')?editor:title).focus();
 }
 function edit(replacement,start=editor.selectionStart,end=editor.selectionEnd,selection){if(!note()||note().deleted||state.readOnly)return;setPreview(false);checkpoint();editor.replaceMarkdown(replacement,start,end,selection);changed();focusEditor();}
 function wrap(left,right=left){const start=editor.selectionStart,end=editor.selectionEnd;const selected=editor.value.slice(start,end);edit(left+selected+right,start,end,[start+left.length,start+left.length+selected.length]);}
@@ -232,9 +234,9 @@ function form(heading,fields,submit){
  for(const field of fields){const label=text('label',field.label);label.htmlFor='field-'+field.name;const input=document.createElement(field.options?'select':'input');input.id=label.htmlFor;input.name=field.name;if(field.options)for(const [value,name] of field.options){const o=text('option',name);o.value=value;input.append(o);}input.value=field.value||'';input.required=!!field.required;f.append(label,input);}
  const actions=text('div','','buttons');const save=button(t('Conferma'),()=>{} ,'primary');save.type='submit';actions.append(save);const cancel=button(t('Annulla'),closeModal);cancel.type='button';actions.append(cancel);f.append(actions);f.onsubmit=async e=>{e.preventDefault();try{await submit(Object.fromEntries(new FormData(f)));closeModal();}catch(e){report(e);}};el.append(f);setTimeout(()=>f.querySelector('input,select')?.focus(),0);
 }
-const folderOptions=()=>[['',t('Senza cartella')],...state.folders.map(f=>[f.id,folderPath(f.id,state.folders).join(' / ')])];
-async function addFolder(name,parent=null){if(state.readOnly)throw Error(t('Archivio aperto in un’altra finestra.'));name=name.trim();if(!name)throw Error(t('Scegli un nome per la cartella.'));if(state.folders.some(f=>f.parent===parent&&normalize(f.name)===normalize(name)))throw Error(t('Esiste già una cartella con questo nome.'));const f={id:uid(),name,parent};await db.put('folders',f);state.folders.push(f);refresh();cloud.schedule();dailyBackup.invalidate();return f;}
-function folderForm(){form(t('Un posto per le idee.'),[{name:'name',label:t('Nome della cartella'),required:true},{name:'parent',label:t('Dentro la cartella'),options:folderOptions(),value:state.folders.some(f=>f.id===state.filter)?state.filter:''}],async values=>{const f=await addFolder(values.name,values.parent||null);state.filter=f.id;tree.reveal(f.id,state.folders);refresh();});}
+const folderOptions=()=>[['',t('Senza cartella')],...state.folders.filter(f=>!f.deleted).map(f=>[f.id,folderPath(f.id,state.folders).join(' / ')])];
+async function addFolder(name,parent=null){if(state.readOnly)throw Error(t('Archivio aperto in un’altra finestra.'));name=name.trim();if(!name)throw Error(t('Scegli un nome per la cartella.'));if(parent&&!state.folders.some(f=>f.id===parent&&!f.deleted))throw Error(t('Scegli una cartella disponibile.'));if(state.folders.some(f=>!f.deleted&&f.parent===parent&&normalize(f.name)===normalize(name)))throw Error(t('Esiste già una cartella con questo nome.'));const f={id:uid(),name,parent};await db.put('folders',f);state.folders.push(f);refresh();cloud.schedule();dailyBackup.invalidate();return f;}
+function folderForm(){form(t('Un posto per le idee.'),[{name:'name',label:t('Nome della cartella'),required:true},{name:'parent',label:t('Dentro la cartella'),options:folderOptions(),value:state.folders.some(f=>f.id===state.filter&&!f.deleted)?state.filter:''}],async values=>{const f=await addFolder(values.name,values.parent||null);state.filter=f.id;tree.reveal(f.id,state.folders);refresh();});}
 async function mutate(fn){const n=note();if(!n)return;fn(n);n.updated=Date.now();scheduleSave(n);await flush();refresh();}
 const commandList=[
  ['copy','Copia selezione','Ctrl C'],['cut','Taglia selezione',''],['paste','Incolla','Ctrl V'],['indent','Aumenta rientro','Tab'],['outdent','Riduci rientro','Shift Tab'],['table','Inserisci tabella',''],['clearFormat','Rimuovi formattazione',''],['duplicateParagraph','Duplica paragrafo',''],['moveUp','Sposta paragrafo sopra',''],['moveDown','Sposta paragrafo sotto',''],['new','Nuova nota','Ctrl Alt N'],['search','Cerca nelle note','Ctrl K'],['folder','Nuova cartella',''],['bold','Grassetto','Ctrl B'],['italic','Corsivo','Ctrl I'],['strike','Barrato',''],['heading','Titolo Markdown',''],['bullet','Elenco puntato',''],['numbered','Elenco numerato',''],['task','Lista di attività',''],['toggleTask','Spunta attività',''],['quote','Citazione',''],['code','Codice inline',''],['codeBlock','Blocco codice',''],['link','Collegamento',''],['reminder','Inserisci reminder',''],['date','Inserisci data',''],['undo','Annulla modifica','Ctrl Z'],['redo','Ripeti modifica','Ctrl Shift Z'],['selectAll','Seleziona tutto',''],['selectParagraph','Seleziona paragrafo',''],['previous','Paragrafo precedente',''],['next','Paragrafo successivo',''],['start','Vai a inizio nota',''],['end','Vai a fine nota',''],['read','Leggi la nota ad alta voce',''],['readParagraph','Leggi il paragrafo',''],['readSelection','Leggi la selezione',''],['stopReading','Ferma lettura',''],['where','Leggi la posizione',''],['properties','Emoji e tag',''],['rename','Rinomina nota',''],['move','Sposta nota',''],['pin','Aggiungi / rimuovi preferita',''],['duplicate','Duplica nota',''],['replace','Trova e sostituisci','Ctrl S'],['replaceAllNotes','Trova e sostituisci in tutte le note','Alt S'],['deletePrevious','Cancella paragrafo precedente',''],['deleteParagraph','Cancella paragrafo',''],['deleteSelection','Cancella selezione',''],['export','Esporta nota Markdown',''],['archive','Esporta archivio ZIP',''],['import','Importa file Markdown',''],['importFolder','Importa cartella Markdown',''],['history','Cronologia della nota',''],['trash','Sposta nel cestino / ripristina',''],['focus','Modalità concentrazione','Ctrl Shift F'],['preview','Scrivi / leggi','Ctrl Shift P'],['save','Salva',''],['help','Guida ai comandi vocali',''],['settings','Preferenze','']
@@ -248,7 +250,7 @@ async function execute(id,args={},source='keyboard'){
  }
  switch(id){
  case 'properties':return editNoteProperties();
- case 'new':return createNote();case 'folder':return args.value?addFolder(args.value,state.folders.some(f=>f.id===state.filter)?state.filter:null):folderForm();
+ case 'new':return createNote();case 'folder':return args.value?addFolder(args.value,state.folders.some(f=>f.id===state.filter&&!f.deleted)?state.filter:null):folderForm();
  case 'copy':case 'cut':{state.clipboard=editor.value.slice(editor.selectionStart,editor.selectionEnd);if(!state.clipboard)return feedback(t('Nessun testo selezionato.'));try{await navigator.clipboard.writeText(state.clipboard);}catch{/* Session clipboard remains available offline and without permission. */}if(id==='cut')edit('');return feedback(t('Testo copiato.'));}
  case 'paste':{let value=state.clipboard;if(source!=='voice')try{value=await navigator.clipboard.readText();}catch{}if(!value)return feedback(t('Gli appunti sono vuoti.'));return edit(value);}
  case 'selectText':{const start=normalize(editor.value).indexOf(normalize(args.value));if(start<0)return feedback(t('Testo non trovato.'));const exact=editor.value.toLocaleLowerCase().indexOf(args.value.toLocaleLowerCase());if(exact<0)return feedback(t('Ripeti il testo con gli stessi accenti della nota.'));setPreview(false);focusEditor();editor.setSelectionRange(exact,exact+args.value.length);return feedback(t('Testo selezionato.'));}
@@ -276,12 +278,12 @@ async function execute(id,args={},source='keyboard'){
  case 'where':return voice.speak(t('Nota {title}. Paragrafo {paragraph}. {words}. Modalità {mode}.',{title:n?.title||t('senza titolo'),paragraph:editor.value.slice(0,editor.selectionStart).split(/\n\n/).length,words:$('#word-count').textContent,mode:voice.mode==='commands'?t('comandi'):t('dettatura')}));
  case 'stopReading':return voice.stopReading();
  case 'rename':if(!n)return;if(args.value){checkpoint();title.value=args.value;return changed();}return form(t('Dai un nome al pensiero.'),[{name:'title',label:t('Titolo'),value:n.title,required:true}],v=>{checkpoint();title.value=v.title;changed();});
- case 'move':if(!n)return;if(args.value){const matches=state.folders.filter(f=>normalize(f.name)===normalize(args.value)||normalize(folderPath(f.id,state.folders).join(' / '))===normalize(args.value));if(matches.length!==1)return feedback(t('Cartella non trovata o nome ambiguo. Usa il percorso completo.'));await mutate(n=>n.folder=matches[0].id);return openNote(n.id);}return form(t('Sposta il pensiero.'),[{name:'folder',label:t('Cartella'),options:folderOptions(),value:n.folder||''}],async v=>{await mutate(n=>n.folder=v.folder||null);await openNote(n.id);});
+ case 'move':if(!n)return;if(args.value){const matches=state.folders.filter(f=>!f.deleted&&(normalize(f.name)===normalize(args.value)||normalize(folderPath(f.id,state.folders).join(' / '))===normalize(args.value)));if(matches.length!==1)return feedback(t('Cartella non trovata o nome ambiguo. Usa il percorso completo.'));return library.perform({kind:'note',id:n.id},'move',matches[0].id);}return library.moveDialog({kind:'note',id:n.id});
  case 'pin':await mutate(n=>n.pinned=!n.pinned);$('#pin-note').textContent=note()?.pinned?'✦':'☆';$('#pin-note').setAttribute('aria-pressed',String(!!note()?.pinned));$('#pin-note').setAttribute('aria-label',note()?.pinned?t('Rimuovi dai preferiti'):t('Aggiungi ai preferiti'));return;
- case 'duplicate':if(!n)return;{const copy={...structuredClone(n),id:uid(),title:n.title+t(' — copia'),created:Date.now(),updated:Date.now()};state.notes.push(copy);scheduleSave(copy);refresh();return openNote(copy.id);}
+ case 'duplicate':if(!n)return;{const copy=await library.duplicate({kind:'note',id:n.id});if(copy)return openNote(copy.id);return;}
  case 'replaceAllNotes':return openFindReplace('all');
  case 'replace':if(!n)return;if(args.from){if(!editor.value.includes(args.from))return feedback(t('Testo non trovato.'));checkpoint();editor.value=editor.value.split(args.from).join(args.to);return changed();}return openFindReplace('note');
- case 'trash':if(!n)return;await mutate(n=>n.deleted=!n.deleted);toast(note().deleted?t('Nota nel cestino. Puoi ripristinarla.'):t('Nota ripristinata.'));return openNote(n.id);
+ case 'trash':if(!n)return;return library.perform({kind:'note',id:n.id},n.deleted?'restore':'trash');
  case 'export':if(n)download(new Blob([markdown(n)],{type:'text/markdown;charset=utf-8'}),safeName(n.title)+'.md');return;
  case 'archive':await flush();download(archive(state.notes,state.folders),'th-ink-'+new Date().toISOString().slice(0,10)+'.zip');return;
  case 'import':$('#import-files').click();return;case 'importFolder':$('#import-directory').click();return;
@@ -447,8 +449,8 @@ const spoken=new SpokenEditor({
   if(id==='save'){await flush();return;}
   if(['import','importFolder','settings','export','archive','history'].includes(id))throw Error(t('Questa azione di sistema richiede un gesto sullo schermo.'));
   return execute(id,args,'screenless');},
- notes:()=>[...state.notes].sort((a,b)=>b.updated-a.updated),folders:()=>[{id:null,name:t('Senza cartella'),label:voice.lang==='it-IT'?t('Senza cartella'):'No folder'},...state.folders.map(f=>({id:f.id,name:f.name,label:folderPath(f.id,state.folders).join(' / ')}))],
- open:openNote,create:async name=>{await createNote();title.value=name;changed();await flush();},folder:async name=>{await addFolder(name,state.folders.some(f=>f.id===state.filter)?state.filter:null);},
+ notes:()=>[...state.notes].sort((a,b)=>b.updated-a.updated),folders:()=>[{id:null,name:t('Senza cartella'),label:voice.lang==='it-IT'?t('Senza cartella'):'No folder'},...state.folders.filter(f=>!f.deleted).map(f=>({id:f.id,name:f.name,label:folderPath(f.id,state.folders).join(' / ')}))],
+ open:openNote,create:async name=>{await createNote();title.value=name;changed();await flush();},folder:async name=>{await addFolder(name,state.folders.some(f=>f.id===state.filter&&!f.deleted)?state.filter:null);},
  move:async id=>{if(state.readOnly)throw Error(t('Archivio in sola lettura.'));await mutate(n=>n.folder=id);await openNote(state.current);},
  selectFolder:id=>{state.filter=id||'all';refresh();},
  search:async query=>{await flush();const request='spoken-'+uid();return new Promise((resolve,reject)=>{const timer=setTimeout(()=>{searchWorker.removeEventListener('message',listener);reject(Error(t('Ricerca scaduta.')));},5000);const listener=({data})=>{if(data.request!==request)return;clearTimeout(timer);searchWorker.removeEventListener('message',listener);resolve(data.ids.map(id=>state.notes.find(n=>n.id===id)).filter(Boolean).map(n=>({id:n.id,label:n.title||t('Senza titolo')})));};searchWorker.addEventListener('message',listener);searchWorker.postMessage({type:'search',query,request});});},
@@ -473,7 +475,7 @@ voice.addEventListener('state',async({detail})=>{
  else{renderVoiceLevel(0);if(state.mode==='voice'&&!voicePreparing)void setMode('keyboard',{keepNotice:true});await releaseWakeLock();}
  syncFocusVoice();
 });
-async function importFiles(files){if(state.readOnly)throw Error(t('Archivio aperto in un’altra finestra.'));let first=null;const imported=[];for(const file of files){if(/\.json$/i.test(file.name)){if(file.size>100*1024*1024)throw Error(t('Backup troppo grande (massimo 100 MB).'));await flush();const restored=restoreBackup(await file.text());for(const f of restored.folders){await db.put('folders',f);state.folders.push(f);}for(const n of restored.notes){await db.saveNote(n);state.notes.push(n);imported.push(n);first??=n.id;}for(const h of restored.history)await db.put('history',h);continue;}if(!/\.(md|markdown|txt)$/i.test(file.name))continue;if(file.size>10*1024*1024){toast(t('File troppo grande: {name}. Limite 10 MB.',{name:file.name}));continue;}let parent=null;const path=file.webkitRelativePath?.split('/').slice(0,-1)||[];for(const name of path){let f=state.folders.find(f=>f.parent===parent&&f.name===name);if(!f)f=await addFolder(name,parent);parent=f.id;}const content=parseMarkdown(await file.text(),file.name);const n={...content,id:uid(),folder:parent,created:Date.now(),updated:Date.now(),pinned:false,deleted:false};await db.saveNote(n);state.notes.push(n);imported.push(n);first??=n.id;}index(imported);cloud.schedule();dailyBackup.invalidate();state.filter='all';refresh();if(first)await openNote(first);toast(t('{count} note importate.',{count:imported.length}));}
+async function importFiles(files){if(state.readOnly)throw Error(t('Archivio aperto in un’altra finestra.'));let first=null;const imported=[];for(const file of files){if(/\.json$/i.test(file.name)){if(file.size>100*1024*1024)throw Error(t('Backup troppo grande (massimo 100 MB).'));await flush();const restored=restoreBackup(await file.text());for(const f of restored.folders){await db.put('folders',f);state.folders.push(f);}for(const n of restored.notes){await db.saveNote(n);state.notes.push(n);imported.push(n);first??=n.id;}for(const h of restored.history)await db.put('history',h);continue;}if(!/\.(md|markdown|txt)$/i.test(file.name))continue;if(file.size>10*1024*1024){toast(t('File troppo grande: {name}. Limite 10 MB.',{name:file.name}));continue;}let parent=null;const path=file.webkitRelativePath?.split('/').slice(0,-1)||[];for(const name of path){let f=state.folders.find(f=>!f.deleted&&f.parent===parent&&f.name===name);if(!f)f=await addFolder(name,parent);parent=f.id;}const content=parseMarkdown(await file.text(),file.name);const n={...content,id:uid(),folder:parent,created:Date.now(),updated:Date.now(),pinned:false,deleted:false};await db.saveNote(n);state.notes.push(n);imported.push(n);first??=n.id;}index(imported);cloud.schedule();dailyBackup.invalidate();state.filter='all';refresh();if(first)await openNote(first);toast(t('{count} note importate.',{count:imported.length}));}
 for(const id of ['#import-files','#import-directory'])$(id).onchange=e=>{importFiles([...e.target.files]).catch(report).finally(()=>e.target.value='');};
 document.addEventListener('click',e=>{const action=e.target.closest('[data-action]');if(action)execute(action.dataset.action,{level:action.dataset.level}).catch(report);const filter=e.target.closest('[data-filter]');if(filter){state.filter=filter.dataset.filter;refresh();}const mode=e.target.closest('[data-mode]');if(mode)setMode(mode.dataset.mode).catch(report);if(e.target.closest('[data-close]')){if(e.target.closest('#modal'))closeModal();else $('#palette').close();}});
 const headingToggle=$('#heading-toggle'),headingMenu=$('#heading-menu');
@@ -509,6 +511,25 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){flush().ca
 window.addEventListener('beforeunload',e=>{if(state.dirty.size||state.saving){e.preventDefault();e.returnValue='';}});
 const online=()=>$('#offline-state').textContent=navigator.onLine?'':t('Offline · puoi scrivere');window.addEventListener('online',online);window.addEventListener('offline',online);
 channel?.addEventListener('message',async({data})=>{if(data.type!=='changed')return;const latest=await db.get('notes',data.id);if(!latest)return;const current=state.notes.find(n=>n.id===data.id);if(current&&current.updated>=latest.updated)return;if(data.id===state.current&&state.dirty.has(data.id))return toast(t('Nota modificata in un’altra finestra. Esporta una copia prima di ricaricare.'));if(data.id===state.current){toast(t('Questa nota è cambiata in un’altra finestra. Riaprila per aggiornarla.'));return;}if(current)Object.assign(current,latest);else state.notes.push(latest);index([latest]);refresh();});
+const library=mountLibrary({state,db,tree,flush,report,form,openNote,execute,editor,edit,addFolder,createNote,changed:async(notes,folders)=>{
+ const byId=new Map(state.notes.map(n=>[n.id,n])),latest=notes.map(n=>byId.get(n.id)).filter(Boolean);index(latest);
+ if(state.folders.some(f=>f.id===state.filter&&f.deleted))state.filter='all';
+ const current=note();if(current){
+  const scroll=$('#document-scroll').scrollTop;title.value=current.title;title.readOnly=editor.readOnly=state.readOnly||!!current.deleted;
+  if(current.deleted&&state.mode==='voice')setMode('keyboard');
+  const path=folderPath(current.folder,state.folders).join(' / ');$('#breadcrumb').textContent=path||t('Appunti');$('#folder-label').textContent=current.deleted?t('NEL CESTINO'):path||t('Senza cartella');
+  $('#pin-note').textContent=current.pinned?'✦':'☆';$('#pin-note').setAttribute('aria-pressed',String(!!current.pinned));renderNoteProperties();$('#document-scroll').scrollTop=scroll;
+ }
+ refresh();updateSaveStatus();dailyBackup.invalidate();cloud.schedule();
+ if(latest.length>50)channel?.postMessage({type:'library-changed'});
+ else{for(const n of latest)channel?.postMessage({type:'changed',id:n.id});if(folders.length)channel?.postMessage({type:'folders-changed'});}
+ await reminders.persist();
+}});
+channel?.addEventListener('message',async({data})=>{if(data.type==='folders-changed'&&state.readOnly){state.folders=await db.all('folders');refresh();}});
+channel?.addEventListener('message',async({data})=>{if(data.type!=='library-changed'||!state.readOnly)return;
+ [state.notes,state.folders]=await Promise.all([db.all('notes'),db.all('folders')]);index(state.notes);
+ const n=note();if(n){const scroll=$('#document-scroll').scrollTop,start=editor.selectionStart,end=editor.selectionEnd;title.value=n.title;editor.value=n.body;editor.setSelectionRange(Math.min(start,n.body.length),Math.min(end,n.body.length));$('#document-scroll').scrollTop=scroll;if(state.preview){$('#preview').innerHTML=renderMarkdown(n.body);reminders.decorate();}}refresh();renderNoteProperties();
+});
 async function boot(){
  await db.open($('#app').dataset.testDatabase||'think-v1');
  const savedLanguage=(await db.get('settings','language'))?.value;
@@ -532,6 +553,8 @@ async function boot(){
 }
 export const appReady=boot().catch(e=>{$('#save-state').textContent=t('Archivio non disponibile');editor.readOnly=true;title.readOnly=true;const el=modal(t('L’archivio non si è aperto.'));el.append(text('p',t('Il browser non ha consentito l’accesso ai dati locali. Verifica i permessi e lo spazio disponibile, poi ricarica. Nessun salvataggio è stato confermato.')),text('p',t(e.message)));});
 
-export {publisher,showPublish,reminders,changeLanguage,spoken,voice,state,db,execute,openNote,flush,appearance,voiceCursor,setMode,cloud,filenSession,dailyBackup,applySyncItem,syncItems};
+export {library,publisher,showPublish,reminders,changeLanguage,spoken,voice,state,db,execute,openNote,flush,appearance,voiceCursor,setMode,cloud,filenSession,dailyBackup,applySyncItem,syncItems};
 
 $('#preview').addEventListener('click',e=>{const b=e.target.closest('[data-reminder]');if(b)reminders.edit(b.dataset.reminder).catch(report);});
+
+$('#preview').addEventListener('click',e=>{const link=e.target.closest('[data-note-link]');if(!link)return;const target=state.notes.find(n=>n.id===link.dataset.noteLink&&!n.deleted);if(target)openNote(target.id).catch(report);else toast(t('Elemento non disponibile.'));});

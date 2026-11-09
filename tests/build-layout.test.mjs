@@ -12,6 +12,6 @@ test('the distributable includes generated runtimes and PHP, without build input
 test('source and generated service workers have separate lifecycles',()=>{
  const source=readFileSync(resolve(root,'src/sw.js'),'utf8'),built=readFileSync(resolve(root,'dist/sw.js'),'utf8');
  assert.match(source,/const CACHE='th-ink-shell-version';/);assert.match(source,/const ASSETS=\[\];/);
- assert.match(built,/const CACHE='th-ink-shell-[a-f0-9]{12}';/);assert(built.includes('./js/app.js'));
+ assert.match(built,/const CACHE='th-ink-shell-[a-f0-9]{12}';/);assert(built.includes('./js/library-interactions.js'));
  for(const path of ['js/markdown-editor.js','assets/search.wasm','assets/emoji/en.json','vendor/vosk/vosk.js'])assert(!existsSync(resolve(root,'src',path)),path);
 });

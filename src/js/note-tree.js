@@ -2,6 +2,7 @@ import {TagTree} from './tag-tree.js';
 import {normalizeTags,tagKey} from './note-properties.js';
 import {t, getLocale} from './i18n.js';
 import {icon} from './icons.js';
+import {treeControls} from './tree-controls.js';
 // One index per render; children are built only for expanded branches.
 export function treeModel(notes,folders,filter='all',sort='updated'){
  if(filter==='tags'){
@@ -10,9 +11,11 @@ export function treeModel(notes,folders,filter='all',sort='updated'){
   return {children:new Map([[null,branches]]),leaves:new Map(branches.map(g=>[g.id,g.notes.sort((a,b)=>sort==='title'?a.title.localeCompare(b.title,getLocale()):b.updated-a.updated)]))};
  }
  const compare=new Intl.Collator(getLocale()).compare;
+ folders=folders.filter(f=>filter==='trash'||!f.deleted);
  const byId=new Map(folders.map(f=>[f.id,f])),children=new Map(),leaves=new Map(),included=new Set();
  const add=(map,key,value)=>{if(!map.has(key))map.set(key,[]);map.get(key).push(value);};
  for(const n of notes){if(filter==='trash'?!n.deleted:n.deleted||filter==='pinned'&&!n.pinned)continue;const parent=byId.has(n.folder)?n.folder:null;add(leaves,parent,n);let id=parent;const seen=new Set();while(id&&byId.has(id)&&!seen.has(id)){seen.add(id);included.add(id);id=byId.get(id).parent;}}
+ if(filter==='trash')for(const f of folders)if(f.deleted){let id=f.id;const seen=new Set();while(id&&byId.has(id)&&!seen.has(id)){seen.add(id);included.add(id);id=byId.get(id).parent;}}
  for(const f of folders)if(!['pinned','trash'].includes(filter)||included.has(f.id))add(children,byId.has(f.parent)?f.parent:null,f);
  for(const list of children.values())list.sort((a,b)=>compare(a.name,b.name));
  for(const list of leaves.values())list.sort((a,b)=>sort==='title'?compare(a.title,b.title):b.updated-a.updated);
@@ -21,7 +24,7 @@ export function treeModel(notes,folders,filter='all',sort='updated'){
 export class NoteTree {
  constructor(root,{open,choose,save}){this.root=root;this.open=open;this.choose=choose;this.save=save;this.collapsed=new Set();
  this.tags=new TagTree(root,{open,toggle:item=>this.toggle(item)});
- root.addEventListener('click',e=>{if(this.tags.enabled)return this.tags.click(e);const item=e.target.closest('[role=treeitem]');if(!item)return;this.focus(item);this.activate(item);});
+ root.addEventListener('click',e=>{if(e.target.closest('button'))return;if(this.tags.enabled)return this.tags.click(e);const item=e.target.closest('[role=treeitem]');if(!item)return;this.focus(item);this.activate(item);});
  root.addEventListener('keydown',e=>this.tags.enabled?this.tags.key(e):this.key(e));
  }
  items(){return [...this.root.querySelectorAll('[role=treeitem]')];}
@@ -37,7 +40,7 @@ export class NoteTree {
   for(const f of children.get(parent)||[]){if(visited.has(f.id))continue;visited.add(f.id);const el=item('folder',f.id,f.name,depth);el.dataset.folderId=f.id;if(f.tag){el.dataset.tagKey=tagKey(f.name);el.firstChild.querySelector('svg').replaceWith(icon('tag'));}el.setAttribute('aria-expanded',String(!this.collapsed.has(f.id)));el.classList.toggle('folder-context',filter===f.id);const chevron=document.createElement('span');chevron.className='tree-chevron';chevron.textContent=this.collapsed.has(f.id)?'›':'⌄';chevron.setAttribute('aria-hidden','true');el.firstChild.prepend(chevron);target.append(el);if(!this.collapsed.has(f.id)){const group=document.createElement('ul');group.setAttribute('role','group');el.append(group);branch(f.id,group,depth+1);}}
   for(const n of leaves.get(parent)||[]){const el=item('note',n.id,n.title||t('Senza titolo'),depth);if(filter==='tags')el.dataset.key='note:'+parent+':'+n.id;if(n.emoji){const emoji=document.createElement('span');emoji.className='tree-emoji';emoji.setAttribute('aria-hidden','true');emoji.textContent=n.emoji;el.firstChild.querySelector('svg').replaceWith(emoji);}el.dataset.noteId=n.id;el.setAttribute('aria-selected',String(n.id===current));if(n.pinned){const star=document.createElement('span');star.className='tree-star';star.textContent='✦';star.setAttribute('aria-label',t('Preferita'));el.firstChild.append(star);}target.append(el);}
  };
- branch(null,fragment,0);this.root.replaceChildren(fragment);
+ branch(null,fragment,0);for(const row of fragment.querySelectorAll('.tree-row'))treeControls(row,{tag:!!row.parentElement.dataset.tagKey});this.root.replaceChildren(fragment);
  if(!this.root.childElementCount){const empty=document.createElement('li');empty.setAttribute('role','none');empty.className='empty-list';empty.textContent=filter==='trash'?t('Il cestino è vuoto.'):filter==='tags'?t('Nessun tag. Aggiungilo dalle proprietà di una nota.'):t('Nessuna nota.');this.root.append(empty);}
  const items=this.items(),active=items.find(el=>el.dataset.key===focused)||items.find(el=>el.dataset.noteId===current)||items[0];if(active){active.tabIndex=0;if(focused)active.focus({preventScroll:true});}
  }

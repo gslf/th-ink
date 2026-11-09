@@ -490,3 +490,33 @@ button:disabled{opacity:.5}
 #toast{inset:auto auto max(24px,env(safe-area-inset-bottom)) 50%;margin:0;border:1px solid var(--line);width:max-content;max-width:min(540px,calc(100vw - 32px));max-height:calc(100dvh - 48px);overflow:auto;white-space:normal;pointer-events:none}
 #toast::backdrop{background:none;backdrop-filter:none;pointer-events:none}
 #toast[data-inline]{position:sticky;inset:0 auto auto;transform:none;margin:12px 16px;width:auto;max-width:none;z-index:10}
+
+
+/* Context actions and direct manipulation share the app's quiet visual language. */
+.tree-row{position:relative;user-select:none;-webkit-user-select:none;gap:6px}
+.tree-name{flex:1}
+.tree-grip,.tree-options{display:grid;place-items:center;flex:0 0 24px;width:24px;height:30px;padding:4px;border-radius:6px;opacity:0;color:var(--muted)}
+.tree-grip{touch-action:none;cursor:grab}
+.tree-grip svg,.tree-options svg{width:16px;height:16px}
+.tree-row:hover>.tree-grip,.tree-row:hover>.tree-options,[role=treeitem]:focus-within>.tree-row>.tree-grip,[role=treeitem]:focus-within>.tree-row>.tree-options{opacity:1}
+.tree-options:hover,.tree-grip:hover{background:var(--line);color:var(--ink)}
+.context-menu{position:fixed;inset:auto;margin:0;padding:6px;min-width:220px;max-width:calc(100vw - 16px);overflow:auto;overscroll-behavior:contain;border:1px solid var(--line);border-radius:14px;background:var(--paper);color:var(--ink);box-shadow:0 12px 40px #0002;z-index:1000;font:13px/1.4 var(--sans)}
+.context-menu[hidden]{display:none}
+.context-menu button{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;min-height:36px;text-align:left;border-radius:8px;white-space:nowrap}
+.context-menu button>span{flex:1}.context-menu button>svg{width:17px;height:17px;flex:0 0 17px}
+.context-menu button:hover,.context-menu button:focus-visible{background:var(--accent);outline:none}.context-menu button:disabled{opacity:.4;cursor:default}.context-menu .danger{color:var(--danger,#ac483c)}
+.context-menu [role=separator]{height:1px;background:var(--line);margin:5px 8px}.context-menu kbd{color:var(--muted);font-size:11px}
+.library-dragging,.library-dragging *{cursor:grabbing!important;user-select:none!important;-webkit-user-select:none!important}
+.drag-source>.tree-row{opacity:.4}
+.drop-inside{background:var(--accent)!important;box-shadow:inset 0 0 0 2px var(--yellow)!important;border-radius:8px}
+.library-drag-ghost{position:fixed;display:grid;grid-template-columns:18px minmax(0,1fr);gap:4px 8px;padding:10px 14px;width:max-content;max-width:min(320px,calc(100vw - 24px));border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 24px #0002;background:var(--paper);color:var(--ink);z-index:1002;pointer-events:none;font:12px/1.4 var(--sans)}
+.library-drag-ghost svg{width:18px;height:18px}.library-drag-ghost strong{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.library-drag-ghost>span{grid-column:1/-1;color:var(--muted);max-width:280px;overflow-wrap:anywhere}.library-drag-ghost.invalid{border-style:dashed}
+.library-drop-line{position:fixed;height:3px;background:var(--ink);border-radius:3px;z-index:1001;pointer-events:none}.library-drop-line:before{content:'';position:absolute;left:-3px;top:-2px;width:7px;height:7px;background:var(--paper);border:2px solid var(--ink);border-radius:50%}
+.library-feedback{position:fixed;bottom:max(20px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:30;display:flex;align-items:center;gap:16px;max-width:calc(100vw - 24px);padding:10px 14px;background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:12px;box-shadow:0 6px 24px #0002;font:12px/1.4 var(--sans)}
+.library-feedback button{font-weight:650;white-space:nowrap;min-height:32px}.library-feedback[hidden],.library-drag-ghost[hidden],.library-drop-line[hidden]{display:none}
+@media(pointer:coarse){.tree-grip,.tree-options{opacity:.75;width:32px;flex-basis:32px;height:40px}.context-menu{min-width:min(280px,calc(100vw - 16px))}.context-menu button{min-height:44px}}
+@media(prefers-reduced-motion:no-preference){.tree-grip,.tree-options{transition:opacity .15s ease,background-color .15s ease}.context-menu:not([hidden]){animation:surface-in .12s ease-out}.library-feedback:not([hidden]){animation:toast-in .15s ease-out}}
+.note-inline-link{display:inline;padding:0;min-height:0;color:var(--link);text-decoration:underline;text-underline-offset:3px;font:inherit;vertical-align:baseline;text-align:inherit}
+
+.library-dragging .tree-row{transition:none!important}
+.library-dragging .drop-inside{outline:2px solid var(--ink);outline-offset:-2px}

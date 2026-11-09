@@ -34,7 +34,7 @@ function inline(text) {
  const token=value=>{tokens.push(value);return `\u0000${tokens.length-1}\u0000`;};
  text=text.replace(/\u0000/g,'');
  text=text.replace(/`([^`]+)`/g,(_,x)=>token(`<code>${escape(x)}</code>`));
- text=escape(text).replace(/\[([^\]]+)\]\(([^)]+)\)/g,(_,label,url)=> (/^reminder:[a-zA-Z0-9_-]{1,64}$/.test(url) ? token(`<button type="button" class="reminder-inline" data-reminder="${url.slice(9)}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="14" r="8"/><path d="M9 2h6M12 2v4m6 1 2-2M12 10v4l2 2"/></svg><span>${label}</span></button>`) : /^(https?:\/\/|mailto:)/i.test(url) ? token(`<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`) : `${label} (${url})`));
+ text=escape(text).replace(/\[([^\]]+)\]\(([^)]+)\)/g,(_,label,url)=> (/^note:[a-zA-Z0-9_-]{1,180}$/.test(url) ? token(`<button type="button" class="note-inline-link" data-note-link="${url.slice(5)}">${label}</button>`) : /^reminder:[a-zA-Z0-9_-]{1,64}$/.test(url) ? token(`<button type="button" class="reminder-inline" data-reminder="${url.slice(9)}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="14" r="8"/><path d="M9 2h6M12 2v4m6 1 2-2M12 10v4l2 2"/></svg><span>${label}</span></button>`) : /^(https?:\/\/|mailto:)/i.test(url) ? token(`<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`) : `${label} (${url})`));
  text=text.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/~~(.+?)~~/g,'<del>$1</del>').replace(/\*([^*]+)\*/g,'<em>$1</em>');
  return text.replace(/\u0000(\d+)\u0000/g,(_,n)=>tokens[Number(n)]);
 }

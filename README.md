@@ -10,6 +10,7 @@ A quiet place to think. Markdown, voice, and very little else.
 - Switch between writing and offline dictation, in English or Italian.
 - Go into focus mode. Just the page and the controls you need.
 - Organize notes with folders, favorites, tags, and emoji.
+- Right-click for actions. Drag to move, undo a move, or restore from the trash.
 - Set reminders, including recurring ones.
 - Turn a folder into a static journal. Export one ZIP, with search, RSS, and SEO metadata.
 - Search offline. Keep revisions. Import and export Markdown.

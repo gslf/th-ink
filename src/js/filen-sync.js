@@ -10,11 +10,12 @@ export function cleanItem(value){
  if(!value||!['note','folder'].includes(value.kind)||typeof value.id!=='string'||!/^[A-Za-z0-9_-]{1,180}$/.test(value.id))throw Error('Elemento cloud non valido.');
  if(value.kind==='folder'){
   if(typeof value.name!=='string'||value.name.length>1000||value.parent!==null&&typeof value.parent!=='string')throw Error('Cartella cloud non valida.');
-  return {kind:'folder',id:value.id,name:value.name,parent:value.parent};
+  return {kind:'folder',id:value.id,name:value.name,parent:value.parent,...(value.deleted?{deleted:true}:{}),...(value.trashGroup?{trashGroup:cleanTrashGroup(value.trashGroup)}:{})};
  }
  if(typeof value.title!=='string'||typeof value.body!=='string'||value.body.length>10*1024*1024||value.folder!==null&&typeof value.folder!=='string'||!Number.isFinite(value.created)||!Number.isFinite(value.updated))throw Error('Nota cloud non valida.');
- return {kind:'note',id:value.id,title:value.title,body:value.body,folder:value.folder,created:value.created,updated:value.updated,pinned:!!value.pinned,deleted:!!value.deleted,...optionalProperties(value)};
+ return {kind:'note',id:value.id,title:value.title,body:value.body,folder:value.folder,created:value.created,updated:value.updated,pinned:!!value.pinned,deleted:!!value.deleted,...(value.trashGroup?{trashGroup:cleanTrashGroup(value.trashGroup)}:{}),...optionalProperties(value)};
 }
+function cleanTrashGroup(value){if(typeof value!=='string'||!/^[A-Za-z0-9_-]{1,180}$/.test(value))throw Error('Elemento cloud non valido.');return value;}
 export async function eventFor(item,parents=[]){
  const data={format:1,parents:[...new Set(parents)].sort(),item:cleanItem(item)};
  return {...data,revision:await digest(JSON.stringify(data))};

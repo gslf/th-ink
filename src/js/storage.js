@@ -22,6 +22,16 @@ export class Storage {
  get(store,id){return this.transaction(store,'readonly',s=>s.get(id));}
  put(store,value){return this.transaction(store,'readwrite',s=>s.put(structuredClone(value)));}
  remove(store,id){return this.transaction(store,'readwrite',s=>s.delete(id));}
+ async saveLibraryChanges({notes=[],folders=[],mirrors=[]}){
+  // One transaction prevents half-moved or half-trashed folder trees.
+  await new Promise((resolve,reject)=>{
+   let tx;try{tx=this.db.transaction(['notes','folders'],'readwrite',{durability:'strict'});}catch(error){if(!(error instanceof TypeError))throw error;tx=this.db.transaction(['notes','folders'],'readwrite');}
+   for(const n of notes)tx.objectStore('notes').put(structuredClone(n));
+   for(const f of folders)tx.objectStore('folders').put(structuredClone(f));
+   tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||Error('Salvataggio annullato'));
+  });
+  for(const note of mirrors)await this.mirrorNote(note);
+ }
  async saveNote(note){
   const incoming=(note.reminders||[]).map(r=>r.id);pruneReminderMetadata(note);
   const copy=structuredClone(note),kept=new Set((copy.reminders||[]).map(r=>r.id));
@@ -37,7 +47,10 @@ export class Storage {
    tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||Error('Salvataggio annullato'));
   });
   // IndexedDB is the atomic source of truth. OPFS is a recoverable plain Markdown mirror.
-  if(this.files){try{const handle=await this.files.getFileHandle(`${note.id}.md`,{create:true});const writer=await handle.createWritable();await writer.write(markdown(copy));await writer.close();return true;}catch{return false;}}
+  return this.mirrorNote(copy);
+ }
+ async mirrorNote(note){
+  if(this.files){try{const handle=await this.files.getFileHandle(`${note.id}.md`,{create:true});const writer=await handle.createWritable();await writer.write(markdown(note));await writer.close();return true;}catch{return false;}}
   return false;
  }
  async snapshot(){return new Promise((resolve,reject)=>{const names=['notes','folders','history'],tx=this.db.transaction(names,'readonly'),snapshot={};for(const name of names){const r=tx.objectStore(name).getAll();r.onsuccess=()=>snapshot[name]=r.result;}tx.oncomplete=()=>resolve(snapshot);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||Error('Backup interrotto'));});}
