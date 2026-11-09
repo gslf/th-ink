@@ -1,3 +1,4 @@
+import {codeBlocks} from './code-blocks.js';
 import {EditorState,Compartment,EditorSelection} from '@codemirror/state';
 import {EditorView,keymap,drawSelection} from '@codemirror/view';
 import {defaultKeymap} from '@codemirror/commands';
@@ -14,6 +15,9 @@ export function createMarkdownEditor(host,scroller,{newline}={}){
    if(host.hidden||!host.clientWidth)return;
    const box=scroller.getBoundingClientRect(),caret=view.coordsAtPos(view.state.selection.main.head);
    if(!caret)return;
+   const horizontal=view.scrollDOM,edge=horizontal.getBoundingClientRect();
+   if(caret.left<edge.left+8)horizontal.scrollLeft-=edge.left+8-caret.left;
+   else if(caret.right>edge.right-8)horizontal.scrollLeft+=caret.right-edge.right+8;
    const top=box.top+12,bottom=box.bottom-12;
    if(caret.top<top)scroller.scrollTop+=caret.top-top;
    else if(caret.bottom>bottom)scroller.scrollTop+=caret.bottom-bottom;
@@ -29,7 +33,7 @@ export function createMarkdownEditor(host,scroller,{newline}={}){
   {tag:tags.processingInstruction,color:'var(--muted)'}
  ]);
  const view=new EditorView({parent:host,state:EditorState.create({extensions:[
-  markdown({addKeymap:false,extensions:[{remove:['SetextHeading']}]}),syntaxHighlighting(style),EditorView.lineWrapping,
+  codeBlocks,markdown({addKeymap:false,extensions:[{remove:['SetextHeading']}]}),syntaxHighlighting(style),EditorView.lineWrapping,
   drawSelection({cursorBlinkRate:0,drawRangeCursor:true}),editable.of([EditorState.readOnly.of(false),EditorView.editable.of(true)]),
   EditorView.contentAttributes.of(()=>({'aria-label':host.getAttribute('aria-label')||'Markdown',lang:host.lang||document.documentElement.lang,spellcheck:'true'})),
   // App undo and formatting shortcuts must reach the shared history handler.

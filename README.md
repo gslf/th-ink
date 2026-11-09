@@ -7,6 +7,7 @@ A quiet place to think. Markdown, voice, and very little else.
 ## Make room for your thoughts
 
 - Write in Markdown. Keep the syntax visible, see the formatting as you type.
+- Choose a font for your notes. Code stays monospace, with offline syntax highlighting.
 - Switch between writing and offline dictation, in English or Italian.
 - Go into focus mode. Just the page and the controls you need.
 - Organize notes with folders, favorites, tags, and emoji.

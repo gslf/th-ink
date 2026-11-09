@@ -1,3 +1,4 @@
+import {NoteFont,noteFonts} from './note-font.js';
 import {mountLibrary} from './library-actions.js';
 import {createToast} from './toast.js';
 import {Publisher} from './publisher.js';
@@ -333,6 +334,7 @@ function help(){const el=modal(t('Mani libere. Mente libera.'));el.append(text('
  const examples=[['seleziona l’ultima frase del paragrafo','select the last sentence in the paragraph'],['seleziona la prima frase della nota','select the first sentence in the note'],['spostati tre frasi in avanti','move three sentences forward'],['spostati al paragrafo successivo','move to the next paragraph'],['seleziona due frasi successive','select the next two sentences'],['estendi selezione tre parole avanti','extend selection three words forward'],['inizio frase / fine paragrafo','start of sentence / end of paragraph'],['vai alla frase due','go to sentence two'],['modifica frase / cancella frase','edit sentence / delete sentence'],['deseleziona','deselect'],['evidenzia ultima frase','highlight the last sentence'],['seleziona da qui alla fine del paragrafo','select from here to the end of the paragraph'],['cancella il paragrafo precedente','delete previous paragraph'],['leggi il paragrafo precedente','read previous paragraph'],['seleziona paragrafo','select paragraph'],['grassetto / corsivo / barrato','bold / italic / strikethrough'],['elenco / elenco numerato / casella','bullet list / numbered list / checklist'],['spunta casella / citazione / codice','toggle checkbox / quote / code'],['inizio nota / fine nota','start of note / end of note'],['paragrafo precedente / successivo','previous paragraph / next paragraph'],['sostituisci ciao con salve','replace hello with hi'],['rinomina nota Idee','rename note Ideas'],['apri nota Idee / cerca viaggio','open note Ideas / search for travel'],['sposta in Lavoro / crea cartella Idee','move to Work / create folder Ideas'],['leggi nota / leggi selezione','read note / read selection'],['nuova nota / duplica nota','new note / duplicate note'],['cestina nota / preferita','trash note / pin note'],['inserisci una frase / nuovo paragrafo','insert a sentence / new paragraph'],['annulla / ripeti / dove sono','undo / redo / where am i'],['elenca note / scegli uno','list notes / choose one'],['elenca cestino / ripristina nota','list trash / restore note'],['modifica selezione / modifica paragrafo','edit selection / edit paragraph'],['trova e sostituisci / collegamento','find and replace / link'],['elenca cartelle / sposta nota','list folders / move note'],['pausa lettura / continua lettura','pause reading / resume reading'],['leggi cronologia / ripristina versione uno','read history / restore version one'],['conferma / annulla comando','confirm / cancel'],['dettatura / ferma ascolto','dictation / stop listening']];for(const [it,en] of examples){const row=text('div','','help-row');row.append(text('span',getLanguage()==='it'?it:en));el.append(row);}el.append(text('p',t('Ctrl/⌘ K: ricerca · Ctrl/⌘ X: comandi · Ctrl/⌘ S: trova/sostituisci nella nota · Alt S: trova/sostituisci in tutte le note · Ctrl/⌘ B/I: formato · Ctrl/⌘ Z: annulla · Ctrl/⌘ Shift Z: ripeti · Ctrl/⌘ Alt N: nuova nota. Le conferme vocali proteggono cancellazioni e sostituzioni. Schermo spento e ascolto in background non sono garantiti dal browser.')));
 }
 async function history(){const n=note();if(!n)return;await flush();await db.revision(n);const record=await db.get('history',n.id);const el=modal(t('Le versioni del pensiero.'));el.append(text('p',t('Fino a 30 versioni locali per nota. Il ripristino conserva prima la versione attuale.')));for(const item of (record?.items||[]).slice().reverse()){const row=text('div','','setting-row');row.append(text('span',date(item.at,true)+' · '+new Date(item.at).toLocaleTimeString(getLocale(),{hour:'2-digit',minute:'2-digit'})),button(t('Ripristina'),async()=>{checkpoint();await db.revision(n);const restored=freshRestoredReminders(item,n);title.value=restored.title;editor.value=restored.body;Object.assign(n,noteProperties(restored));changed();closeModal();toast(t('Versione ripristinata.'));}));el.append(row);}}
+const noteFont=new NoteFont({db,root:document.documentElement,onChange:()=>{resize();}});
 async function settings(){
  const el=modal(t('Come ti piace.'));
  const languageLabel=text('label',t('Lingua dell’app'));languageLabel.htmlFor='app-language';
@@ -340,6 +342,11 @@ async function settings(){
  for(const [value,label] of [['auto',t('Automatico (browser)')],['it','Italiano'],['en','English']]){const option=text('option',label);option.value=value;languageSelect.append(option);}
  languageSelect.value=getLanguagePreference();languageSelect.onchange=async()=>{languageSelect.disabled=true;try{await changeLanguage(languageSelect.value);await settings();$('#app-language').focus();}catch(e){languageSelect.disabled=false;languageSelect.value=getLanguagePreference();report(e);}};
  el.append(languageLabel,languageSelect,text('p',t('Interfaccia, dettatura e lettura usano la stessa lingua. Le note esistenti non vengono tradotte.')));
+ const fontLabel=text('label',t('Carattere delle note'));fontLabel.htmlFor='note-font';
+ const fontSelect=document.createElement('select');fontSelect.id='note-font';fontSelect.name='note-font';
+ for(const font of noteFonts){const option=text('option',font.label);option.value=font.id;fontSelect.append(option);}fontSelect.value=noteFont.preference;
+ fontSelect.onchange=async()=>{try{await noteFont.set(fontSelect.value);}catch(e){fontSelect.value=noteFont.preference;report(e);}};
+ el.append(fontLabel,fontSelect,text('p',t('Solo il testo delle note. Interfaccia e blocchi di codice mantengono il proprio carattere.')));
  const field=document.createElement('fieldset');field.className='theme-picker';field.append(text('legend',t('Aspetto')));const options=text('div','','theme-options');
  for(const [value,label,symbol] of [['light',t('Chiaro'),'☀'],['dark',t('Scuro'),'☾'],['auto','Auto','◐']]){const item=document.createElement('label'),input=document.createElement('input');input.type='radio';input.name='appearance';input.value=value;input.checked=appearance.preference===value;input.onchange=()=>{if(input.checked)appearance.set(value).catch(report);};const icon=text('span',symbol);icon.setAttribute('aria-hidden','true');item.append(input,icon,text('span',label));options.append(item);}field.append(options);el.append(field,text('p',t('Auto segue l’aspetto del dispositivo.')));
  const row=(parent,name,detail,label,fn)=>{const r=text('div','','setting-row'),left=text('div',name);if(detail)left.append(text('small',detail));r.append(left,button(label,fn));parent.append(r);};
@@ -365,6 +372,7 @@ async function changeLanguage(value,{persist=true}={}){
  await setMode('keyboard');voice.stop();spoken.cancel();await voiceLaunch?.catch(()=>{});
  try{setLanguagePreference(value,{persist});}catch{setLanguagePreference(value,{persist:false});}
  voice.lang=getLocale();voice.mode='dictation';
+ await noteFont.restore();
  translateStatic();setupIcons();updateLanguageMetadata();renderNoteProperties();
  editor.lang=title.lang=getLanguage();
  $('#transcript').textContent='';notificationToast.hide();
@@ -534,6 +542,7 @@ async function boot(){
  await db.open($('#app').dataset.testDatabase||'think-v1');
  const savedLanguage=(await db.get('settings','language'))?.value;
  if(validPreference(savedLanguage))setLanguagePreference(savedLanguage,{persist:false});
+ await noteFont.restore();
  translateStatic();setupIcons();updateLanguageMetadata();renderNoteProperties();voice.lang=getLocale();editor.lang=title.lang=getLanguage();
  void persistence.ensure();
  tree.collapsed=new Set((await db.get('settings','collapsed-folders'))?.value||[]);

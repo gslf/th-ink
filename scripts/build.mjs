@@ -31,6 +31,7 @@ try{
  const modelFiles=Object.values(JSON.parse(readFileSync('src/models/manifest.json','utf8'))).map(m=>join(cache,'voice',m.url));
  for(const path of [...runtimeFiles,...modelFiles]){const name=relative(join(cache,'voice'),resolve(path));if(name.startsWith('..'))throw Error('Speech asset is outside its cache.');const target=join(staging,name);mkdirSync(dirname(target),{recursive:true});copyFileSync(path,target);}
  run(process.execPath,['scripts/build-filen.mjs']);
+ run(process.execPath,['scripts/build-highlight.mjs']);
  run(process.execPath,['scripts/build-editor.mjs']);
  run(process.execPath,['scripts/build-emoji.mjs']);
  run(process.execPath,['scripts/build-backend.mjs']);

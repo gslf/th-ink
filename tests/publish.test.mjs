@@ -7,7 +7,7 @@ import {Publisher} from '../src/js/publisher.js';
 const config={folder:'public',title:'Quiet journal',description:'Ideas, with room to breathe.',author:'Test Author',url:'https://example.test/journal/',language:'en',automatic:true};
 const folders=[{id:'public',name:'Journal'},{id:'sub',name:'Research',parent:'public'},{id:'private',name:'Private'},{id:'deleted',name:'Deleted',parent:'public',deleted:true},{id:'orphan',name:'Orphan',parent:'deleted'}];
 const note=(id,created,extra={})=>({id,title:id,body:'Hello **world**.',folder:'public',created,updated:created,...extra});
-const assets=Object.fromEntries(await Promise.all(['site.css','site.js','favicon.svg'].map(async name=>[name,await readFile(new URL('../src/assets/publish/'+name,import.meta.url),'utf8')])));
+const assets=Object.fromEntries(await Promise.all(['site.css','site.js','code.css','favicon.svg'].map(async name=>[name,await readFile(new URL('../src/assets/publish/'+name,import.meta.url),'utf8')])));
 const build=(notes,extra={})=>buildPublishedSite({notes:selectPublishedNotes(notes,folders,'public'),config,assets,...extra});
 test('publishing selects only the live subtree, strips private properties and sorts by creation',()=>{
  const selected=selectPublishedNotes([note('old',1,{updated:9999}),note('new',9,{folder:'sub'}),note('private',8,{folder:'private',body:'SECRET'}),note('trash',10,{deleted:true}),note('orphan',20,{folder:'orphan'})],folders,'public');

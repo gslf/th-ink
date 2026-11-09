@@ -1,5 +1,7 @@
 // Italian source messages are stable translation keys. User content is never translated.
 export default {
+ 'Carattere delle note':'Note font',
+ 'Solo il testo delle note. Interfaccia e blocchi di codice mantengono il proprio carattere.':'Note text only. The interface and code blocks keep their own fonts.',
  "Trascina per spostare":"Drag to move",
  "Azioni":"Actions",
  "Elemento non disponibile.":"Item unavailable.",

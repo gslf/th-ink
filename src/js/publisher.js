@@ -16,7 +16,7 @@ export class Publisher extends EventTarget {
   this.busy=true;this.notify('Generazione del sito…');
   try{
    const config=validatePublishConfig(this.config);await this.before();const snapshot=this.snapshot(),notes=selectPublishedNotes(snapshot.notes,snapshot.folders,config.folder);
-   this.assets??=Promise.all(['site.css','site.js','favicon.svg'].map(async name=>{const r=await fetch(new URL('../assets/publish/'+name,import.meta.url));if(!r.ok)throw Error('Risorse del sito non disponibili. Riprova online.');return [name,await r.text()];})).then(Object.fromEntries).catch(e=>{this.assets=null;throw e;});
+   this.assets??=Promise.all(['site.css','site.js','code.css','favicon.svg'].map(async name=>{const r=await fetch(new URL('../assets/publish/'+name,import.meta.url));if(!r.ok)throw Error('Risorse del sito non disponibili. Riprova online.');return [name,await r.text()];})).then(Object.fromEntries).catch(e=>{this.assets=null;throw e;});
    const assets=await this.assets;
    const result=await new Promise((resolve,reject)=>{
     this.worker??=new Worker(new URL('./publish-worker.js',import.meta.url),{type:'module'});

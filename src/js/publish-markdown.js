@@ -1,3 +1,4 @@
+import {renderCodeBlock} from './code-highlight.js';
 // Export-only Markdown renderer. Raw HTML is always text; links resolve only
 // inside the public selection or to explicitly allowed external protocols.
 export const escapeHTML=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -29,13 +30,13 @@ export function renderPublishedMarkdown(source,{link=()=>null}={}){
   // Tokens are expanded only once, so source text cannot become executable markup.
   return text.replace(/\0(\d+)\0/g,(_,i)=>tokens[+i]||'');
  };
- const lines=String(source).replace(/\r/g,'').split('\n');let html='',fence=null,code=[],paragraph=[],lists=[];
+ const lines=String(source).replace(/\r/g,'').split('\n');let html='',fence=null,language='',code=[],paragraph=[],lists=[];
  const endParagraph=()=>{if(paragraph.length){html+='<p>'+inline(paragraph.join('\n')).replace(/\n/g,'<br>')+'</p>';paragraph=[];}};
  const popList=()=>{html+=`</li></${lists.pop().type}>`;};const endLists=()=>{while(lists.length)popList();};
  for(let row=0;row<lines.length;row++){
   const line=lines[row],f=line.match(/^\s{0,3}(`{3,}|~{3,})([^`]*)$/);
-  if(fence){if(f&&f[1][0]===fence[0]&&f[1].length>=fence.length){html+=`<pre><code>${escapeHTML(code.join('\n'))}</code></pre>`;code=[];fence=null;}else code.push(line);continue;}
-  if(f){endParagraph();endLists();fence=f[1];continue;}
+  if(fence){if(f&&f[1][0]===fence[0]&&f[1].length>=fence.length&&!f[2].trim()){html+=renderCodeBlock(code.join('\n'),language);code=[];fence=null;}else code.push(line);continue;}
+  if(f){endParagraph();endLists();fence=f[1];language=f[2];continue;}
   if(!line.trim()){endParagraph();continue;}
   if(line.includes('|')&&/^\s*\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(lines[row+1]||'')){
    endParagraph();endLists();const cells=v=>v.trim().replace(/^\||\|$/g,'').split('|').map(x=>inline(x.trim()));
@@ -56,6 +57,6 @@ export function renderPublishedMarkdown(source,{link=()=>null}={}){
   else if(/^\s*(?:---+|\*\*\*+|___+)\s*$/.test(line)){endParagraph();html+='<hr>';}
   else paragraph.push(line);
  }
- endParagraph();endLists();if(fence)html+=`<pre><code>${escapeHTML(code.join('\n'))}</code></pre>`;
+ endParagraph();endLists();if(fence)html+=renderCodeBlock(code.join('\n'),language);
  return {html,headings,links:[...links],warnings:[...warnings]};
 }

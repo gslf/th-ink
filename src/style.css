@@ -520,3 +520,10 @@ button:disabled{opacity:.5}
 
 .library-dragging .tree-row{transition:none!important}
 .library-dragging .drop-inside{outline:2px solid var(--ink);outline-offset:-2px}
+
+/* Reading preferences affect note content, never application controls. */
+#editor,.markdown,.note-title{font-family:var(--note-font,var(--serif))}
+.markdown table{font-family:inherit}
+#editor .cm-scroller{overflow-x:auto;overflow-y:hidden;max-width:100%}
+/* A wide code line must not widen the wrapping column of ordinary paragraphs. */
+#editor .cm-content{width:100%;min-width:0;flex:0 0 100%}

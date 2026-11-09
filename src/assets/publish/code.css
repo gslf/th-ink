@@ -1,0 +1,18 @@
+/* Shared by the editor, reading view, and exported HTML. No remote fonts. */
+:root{--code-font:ui-monospace,'Cascadia Mono','Liberation Mono',Menlo,Consolas,'Courier New',monospace;--syntax-keyword:#7945a6;--syntax-string:#31651f;--syntax-number:#9b4516;--syntax-name:#245f92;--syntax-comment:#74746a}
+:root[data-theme=dark],:root.dark{--syntax-keyword:#caa1ef;--syntax-string:#a4cd8a;--syntax-number:#e9b17f;--syntax-name:#8cbfe9;--syntax-comment:#a6a79a}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]):not([data-theme=dark]){--syntax-keyword:#caa1ef;--syntax-string:#a4cd8a;--syntax-number:#e9b17f;--syntax-name:#8cbfe9;--syntax-comment:#a6a79a}}
+.markdown pre,.prose pre,#editor .cm-code-line{font:14px/1.5 var(--code-font);font-variant-ligatures:none;font-synthesis:none;letter-spacing:0;tab-size:4;white-space:pre;overflow-wrap:normal;word-break:normal;text-align:left;direction:ltr;unicode-bidi:isolate;background:var(--sidebar,var(--side));color:var(--ink)}
+.markdown pre,.prose pre{overflow:auto;max-width:100%;padding:18px;border:1px solid var(--line);border-radius:10px}
+.markdown pre code,.prose pre code,#editor .cm-code-line span{font:inherit;letter-spacing:inherit;white-space:inherit;background:none;padding:0;text-decoration:none}
+.markdown code,.prose code{font-family:var(--code-font);font-variant-ligatures:none}
+#editor .cm-code-line{white-space:pre!important;padding:0 12px;min-width:100%}
+#editor .cm-code-fence{color:var(--muted)}
+#editor .cm-code-fence span{color:inherit}
+.hljs-keyword,.hljs-selector-tag,.hljs-type{color:var(--syntax-keyword)}
+.hljs-string,.hljs-regexp,.hljs-addition{color:var(--syntax-string)}
+.hljs-number,.hljs-literal,.hljs-symbol,.hljs-bullet{color:var(--syntax-number)}
+.hljs-title,.hljs-attr,.hljs-attribute,.hljs-name,.hljs-selector-class,.hljs-selector-id,.hljs-built_in{color:var(--syntax-name)}
+.hljs-comment,.hljs-quote{color:var(--syntax-comment)}
+.hljs-meta,.hljs-deletion{color:var(--syntax-keyword)}
+#editor .cm-code-line{width:max-content}

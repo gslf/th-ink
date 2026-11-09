@@ -1,3 +1,4 @@
+import {renderCodeBlock} from './code-highlight.js';
 import {pruneReminderMetadata} from './reminder-model.js';
 import {propertiesHeader,readPropertiesHeader} from './note-properties.js';
 export const normalize = value => value.normalize('NFD').replace(/\p{M}/gu,'').toLocaleLowerCase().replace(/[’]/g,"'");
@@ -39,13 +40,14 @@ function inline(text) {
  return text.replace(/\u0000(\d+)\u0000/g,(_,n)=>tokens[Number(n)]);
 }
 export function renderMarkdown(text) {
- const lines=text.replace(/\r/g,'').split('\n');let html='',code=false,buf=[],lists=[];
+ const lines=text.replace(/\r/g,'').split('\n');let html='',code=null,language='',buf=[],lists=[];
  const popList=()=>{const list=lists.pop();html+=`</li></${list.type}>`;};
  const close=()=>{while(lists.length)popList();};
  for(let row=0;row<lines.length;row++){
   const line=lines[row];
-  if(/^```/.test(line)){close();if(code){html+=`<pre><code>${escape(buf.join('\n'))}</code></pre>`;buf=[];}code=!code;continue;}
-  if(code){buf.push(line);continue;}
+  const fence=line.match(/^ {0,3}(`{3,}|~{3,})([^`]*)$/);
+  if(code){if(fence&&fence[1][0]===code[0]&&fence[1].length>=code.length&&!fence[2].trim()){html+=renderCodeBlock(buf.join('\n'),language);buf=[];code=null;}else buf.push(line);continue;}
+  if(fence){close();code=fence[1];language=fence[2];continue;}
   if(line.includes('|') && row+1<lines.length && /^\s*\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(lines[row+1])){
    close();const cells=value=>value.trim().replace(/^\||\|$/g,'').split('|').map(c=>c.trim());
    html+='<div class="table-scroll"><table><thead><tr>'+cells(line).map(c=>'<th>'+inline(c)+'</th>').join('')+'</tr></thead><tbody>';row++;
@@ -69,7 +71,7 @@ export function renderMarkdown(text) {
   else if(/^---+$/.test(line))html+='<hr>';
   else if(line)html+=`<p>${inline(line)}</p>`;
  }
- close();if(code)html+=`<pre><code>${escape(buf.join('\n'))}</code></pre>`;return html;
+ close();if(code)html+=renderCodeBlock(buf.join('\n'),language);return html;
 }
 const commands = [
  ['copy',['copia','copy']],['cut',['taglia','cut']],['paste',['incolla','paste']],['indent',['rientra','indent']],['outdent',['riduci rientro','outdent']],['table',['tabella','table']],['clearFormat',['rimuovi formattazione','clear formatting']],['duplicateParagraph',['duplica paragrafo','duplicate paragraph']],['moveUp',['sposta paragrafo sopra','move paragraph up']],['moveDown',['sposta paragrafo sotto','move paragraph down']],['undo',['annulla','undo']],['redo',['ripeti','redo']],['new',['nuova nota','new note']],

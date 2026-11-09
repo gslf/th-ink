@@ -5,6 +5,7 @@ licenses of bundled dependencies.
 
 | Component | Version | License | Source |
 | --- | --- | --- | --- |
+| Highlight.js | 11.11.1 | BSD-3-Clause | [Highlight.js](https://github.com/highlightjs/highlight.js) |
 | CodeMirror / Lezer | Pinned in `package-lock.json` | MIT | [CodeMirror](https://github.com/codemirror) |
 | vosk-browser / Vosk runtime | 0.0.8 | Apache-2.0 | [vosk-browser](https://github.com/ccoreilly/vosk-browser) |
 | Italian speech model | vosk-model-small-it-0.22 | Apache-2.0 | [Vosk catalog](https://alphacephei.com/vosk/models) |
