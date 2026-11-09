@@ -2,7 +2,22 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
 import {resolve} from 'node:path';
+import {createHash} from 'node:crypto';
+import {MODELS,RUNTIME,SPEECH_ASSETS} from '../src/js/voice-config.js';
 const root=resolve(import.meta.dirname,'..');
+test('published speech bytes match browser integrity pins and survive CRLF-to-LF uploads',()=>{
+ const hash=data=>createHash('sha256').update(data).digest('hex');
+ for(const asset of [RUNTIME,...SPEECH_ASSETS,...Object.values(MODELS)]){
+  const data=readFileSync(resolve(root,'dist',asset.url));
+  assert.equal(data.length,asset.bytes,asset.url);
+  assert.equal(hash(data),asset.sha256,asset.url);
+  if(asset.type==='text/javascript')assert.equal(hash(Buffer.from(data.toString('utf8').replaceAll('\r\n','\n'))),asset.sha256,`${asset.url}: upload must not change the pinned bytes`);
+ }
+ for(const package_ of JSON.parse(readFileSync(resolve(root,'scripts/voice-lock.json'))))for(const file of Object.values(package_.files)){
+  const data=readFileSync(resolve(root,'dist',file.path.replace('.cache/voice/','')));
+  assert.equal(hash(data),file.installedSha256||file.sha256,file.path);
+ }
+});
 test('the distributable includes generated runtimes and PHP, without build inputs or private configuration',()=>{
  for(const path of ['index.html','js/app.js','js/markdown-editor.js','assets/search.wasm','assets/emoji/en.json','assets/emoji/it.json','api/index.php','api/vendor/autoload.php','api/vendor/.htaccess','LICENSE','THIRD_PARTY.md'])assert(existsSync(resolve(root,'dist',path)),path);
  for(const path of ['editor/entry.js','native/search.c','api/config.php','.env','node_modules','server'])assert(!existsSync(resolve(root,'dist',path)),path);

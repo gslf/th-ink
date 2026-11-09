@@ -20,8 +20,8 @@ export const MODELS = {
 };
 export const RUNTIME = {
   "url": "./vendor/vosk/vosk.js",
-  "bytes": 5803043,
-  "sha256": "c954bb1888e97a9c2ea7ebba3659c0d1ee4e5c3c970d60997fee9bc9b281a601",
+  "bytes": 5802761,
+  "sha256": "b5e296a54e5135899aac79cae72c326a9000742f56eb163c6fbff8991505cc11",
   "type": "text/javascript"
 };
 export const SPEECH_ASSETS = [

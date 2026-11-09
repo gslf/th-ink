@@ -9,7 +9,7 @@
         "path": ".cache/voice/vendor/vosk/vosk.js",
         "sha256": "29504515526e974f4cb053cf08811c4de5fb2a74007c0a5a957db50eaa8d5d0c",
         "patch": "vosk-csp",
-        "installedSha256": "c954bb1888e97a9c2ea7ebba3659c0d1ee4e5c3c970d60997fee9bc9b281a601"
+        "installedSha256": "b5e296a54e5135899aac79cae72c326a9000742f56eb163c6fbff8991505cc11"
       }
     }
   },

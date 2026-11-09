@@ -38,4 +38,6 @@ def patch_vosk(data):
         raise ValueError('Dynamic JavaScript compilation remains in the worker')
     encoded = base64.b64encode(worker.encode('utf-8')).decode('ascii')
     notice = '// Modified by th.ink: CSP-compatible closure bindings; see scripts/voice-patches/vosk-csp-bindings.js.\n'
-    return (notice + source[:match.start(1)] + encoded + source[match.end(1):]).encode('utf-8')
+    # Canonical LF bytes keep the pinned hash stable when hosting upload tools
+    # normalize text line endings. The upstream runtime contains mixed CRLF/LF.
+    return (notice + source[:match.start(1)] + encoded + source[match.end(1):]).replace('\r\n', '\n').encode('utf-8')
