@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {TagIndex} from '../dist/js/tag-index.js';
-import {treeModel} from '../dist/js/note-tree.js';
-import {normalizeEmoji} from '../dist/js/note-properties.js';
+import {TagIndex} from '../src/js/tag-index.js';
+import {treeModel} from '../src/js/note-tree.js';
+import {normalizeEmoji} from '../src/js/note-properties.js';
 const note=(id,tags)=>({id,title:id,tags,updated:1});
 test('incremental tags preserve memberships, counts, caches and deletions',()=>{
  const index=new TagIndex(),a=note('a',['Ideas','Work','ideas']),b={...note('b',['work']),pinned:true};index.upsert(a);index.upsert(b);

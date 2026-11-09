@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {noteProperties,normalizeEmoji,normalizeTags,propertiesHeader} from '../dist/js/note-properties.js';
-import {markdown,parseMarkdown,safeName} from '../dist/js/core.js';
-import {treeModel} from '../dist/js/note-tree.js';
-import {cleanItem,eventFor,serializeEvent,parseEvent} from '../dist/js/filen-sync.js';
-import {Storage} from '../dist/js/storage.js';
-import {restoreBackup} from '../dist/js/restore-backup.js';
+import {noteProperties,normalizeEmoji,normalizeTags,propertiesHeader} from '../src/js/note-properties.js';
+import {markdown,parseMarkdown,safeName} from '../src/js/core.js';
+import {treeModel} from '../src/js/note-tree.js';
+import {cleanItem,eventFor,serializeEvent,parseEvent} from '../src/js/filen-sync.js';
+import {Storage} from '../src/js/storage.js';
+import {restoreBackup} from '../src/js/restore-backup.js';
 const n={kind:'note',id:'n1',title:'Garden',body:'A quiet thought.\n',folder:null,created:1,updated:2,pinned:false,deleted:false};
 test('note properties accept compound emoji and normalize duplicate tags',()=>{
  for(const emoji of ['💡','👩🏽‍💻','👨‍👩‍👧‍👦','🇮🇹','1️⃣','❤️',''])assert.equal(normalizeEmoji(emoji),emoji);

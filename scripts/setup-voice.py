@@ -24,14 +24,14 @@ with tempfile.TemporaryDirectory(prefix='think-voice-') as temporary:
                 if file.get('patch')=='vosk-csp':data=patch_vosk(data)
                 if hashlib.sha256(data).hexdigest()!=file.get('installedSha256',file['sha256']):raise ValueError('Installed runtime integrity mismatch')
                 target=ROOT/file['path'];target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(data)
-    models=json.loads((ROOT/'dist/models/manifest.json').read_text())
-    if not all(valid(ROOT/'dist'/m['url'],m['sha256']) for m in models.values()):
+    models=json.loads((ROOT/'src/models/manifest.json').read_text())
+    if not all(valid(ROOT/'.cache/voice'/m['url'],m['sha256']) for m in models.values()):
         archives=[]
         for lang in ['it-IT','en-US']:
             model=models[lang];archive=temp/(model['id']+'.zip');download(model['source'],archive)
             if sha(archive)!=model['sourceSha256']:raise ValueError('Model integrity mismatch')
             archives.append(str(archive))
-        subprocess.run([sys.executable,str(ROOT/'scripts/pack-models.py'),*archives],check=True)
+        subprocess.run([sys.executable,str(ROOT/'scripts/pack-models.py'),'--cache-only',*archives],check=True)
         for model in models.values():
-            if not valid(ROOT/'dist'/model['url'],model['sha256']):raise ValueError('Repacked model differs from pinned output')
+            if not valid(ROOT/'.cache/voice'/model['url'],model['sha256']):raise ValueError('Repacked model differs from pinned output')
 print('Local speech verified: Italian, English, ASR, and synthesis. No downloads required during offline use.')

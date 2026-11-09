@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {ReminderIndex,pruneReminderMetadata,freshRestoredReminders,normalizeReminders,reminderMarkers,reminderLink} from '../dist/js/reminder-model.js';
-import {markdown,parseMarkdown,renderMarkdown} from '../dist/js/core.js';
-import {cleanItem,eventFor,serializeEvent,parseEvent} from '../dist/js/filen-sync.js';
+import {ReminderIndex,pruneReminderMetadata,freshRestoredReminders,normalizeReminders,reminderMarkers,reminderLink} from '../src/js/reminder-model.js';
+import {markdown,parseMarkdown,renderMarkdown} from '../src/js/core.js';
+import {cleanItem,eventFor,serializeEvent,parseEvent} from '../src/js/filen-sync.js';
 const r={id:'reminder-1',text:'Call Alice',at:'2026-11-10T09:00:00.000Z',zone:'Europe/Rome',repeat:'weekly',interval:2,until:'',done:false,snooze:''};
 const n={id:'note-1',title:'Work',body:reminderLink(r),reminders:[r],updated:100,created:100,deleted:false,pinned:false,folder:null};
 test('reminders survive Markdown, cloud serialization and safe rendering',async()=>{

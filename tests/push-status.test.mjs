@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {pushStatusText,samePushKey,deliveryStatusText} from '../dist/js/push-status.js';
+import {pushStatusText,samePushKey,deliveryStatusText} from '../src/js/push-status.js';
 test('push outcomes distinguish provider acceptance from device display and queued tests',()=>{
  assert.match(pushStatusText({status:'accepted'}),/Display on the device is not confirmed/);
  assert.match(pushStatusText({status:'queued'}),/queued/);

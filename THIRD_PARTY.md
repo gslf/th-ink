@@ -25,6 +25,6 @@ closures. The WASM engine and model weights are unchanged. The eSpeak runtime
 is unmodified. Upstream source is available through the links above.
 
 Speech assets are pinned by version and checksum in `scripts/voice-lock.json`
-and `dist/models/manifest.json`. JavaScript and PHP dependencies are pinned in
+and `src/models/manifest.json`. JavaScript and PHP dependencies are pinned in
 `package-lock.json` and `server/composer.lock`. Runtime code is served locally;
 no CDN is used during app operation.

@@ -1,7 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {parseNavigation,resolveNavigation,textUnits,textPosition,navigationGrammar} from '../dist/js/text-navigation.js';
-import {parseScreenless} from '../dist/js/screenless.js';
-import {grammar,chooseTranscript} from '../dist/js/voice-grammar.js';
+import {parseNavigation,resolveNavigation,textUnits,textPosition,navigationGrammar} from '../src/js/text-navigation.js';
+import {parseScreenless} from '../src/js/screenless.js';
+import {grammar,chooseTranscript} from '../src/js/voice-grammar.js';
 const body='Prima frase. Seconda frase! Terza frase?\n\nAltro paragrafo. Ultima frase.';
 const run=(command,at=0,text=body)=>resolveNavigation(text,Array.isArray(at)?at:[at,at],parseScreenless(command),'it');
 test('last sentence of paragraph differs from last sentence of note, IT/EN',()=>{

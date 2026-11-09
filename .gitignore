@@ -15,9 +15,10 @@ node_modules/
 *.pem
 *.key
 
-# Downloaded speech models and generated third-party bundles
-**/dist/models/*.tar.gz
-**/dist/vendor/
+# Generated distribution and local dependency caches
+/dist/
+/.cache/
+/server/vendor/
 
 # Generated test reports, coverage, and preview screenshots
 **/tests/reports/
@@ -46,15 +47,10 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
-# Keep dist/: it contains the application's maintained source files.
-
 # Private reminder deployment data
 think-private/
 *.sqlite*
 server/config.php
-
-# Rebuilt locally with server/composer.lock, then uploaded to OVH
-/dist/api/vendor/
 
 # Private configuration, authentication stores, and local certificates
 config.php

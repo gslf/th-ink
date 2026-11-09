@@ -6,7 +6,7 @@
     "integrity": "sha512-df9MuChirUGKxP/+4k8tBV6hJOic8IRdJXv64+ET0Ue5CddOzLZINiHOWCka765gBzHJWNtQKgaYakS0FXZIJA==",
     "files": {
       "package/dist/vosk.js": {
-        "path": "dist/vendor/vosk/vosk.js",
+        "path": ".cache/voice/vendor/vosk/vosk.js",
         "sha256": "29504515526e974f4cb053cf08811c4de5fb2a74007c0a5a957db50eaa8d5d0c",
         "patch": "vosk-csp",
         "installedSha256": "c954bb1888e97a9c2ea7ebba3659c0d1ee4e5c3c970d60997fee9bc9b281a601"
@@ -20,11 +20,11 @@
     "integrity": "sha512-Izbkm7NWccwb//RKgOp1/0k21StKN1DFIn+K7GU1XN7n6pmSi4bsk/0tYUsgQbysC4GVyrVompNmLInU/BFE+A==",
     "files": {
       "package/espeak-ng.js": {
-        "path": "dist/vendor/espeak/espeak-ng.js",
+        "path": ".cache/voice/vendor/espeak/espeak-ng.js",
         "sha256": "3502d997af2640e54518a06845776c8507bfeebd8ff75f80176370e35de9896b"
       },
       "package/espeak-ng.data": {
-        "path": "dist/vendor/espeak/espeak-ng.data",
+        "path": ".cache/voice/vendor/espeak/espeak-ng.data",
         "sha256": "f7f8eff5685c709db9dae81e88a0e0556867d60514f7308ae99e0579369397b5"
       }
     }

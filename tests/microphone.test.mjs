@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {requestMicrophone} from '../dist/js/microphone.js';
+import {requestMicrophone} from '../src/js/microphone.js';
 test('microphone permissions time out and a late stream is stopped',async()=>{
  let grant,stopped=0;
  await assert.rejects(requestMicrophone(()=>new Promise(resolve=>grant=resolve),{timeoutMs:5}),/non ha risposto/);

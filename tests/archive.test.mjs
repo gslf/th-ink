@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {Persistence} from '../dist/js/persistence.js';
-import {treeModel} from '../dist/js/note-tree.js';
-import {Storage} from '../dist/js/storage.js';
+import {Persistence} from '../src/js/persistence.js';
+import {treeModel} from '../src/js/note-tree.js';
+import {Storage} from '../src/js/storage.js';
 test('persistence verifies the grant and coalesces requests',async()=>{let granted=false,calls=0;const p=new Persistence({persisted:async()=>granted,persist:async()=>{calls++;granted=true;return true;}});await Promise.all([p.ensure(),p.ensure()]);assert.equal(p.status,'granted');await p.ensure();assert.equal(calls,1);});
 test('denial remains explicit, then can be retried',async()=>{let allow=false;const p=new Persistence({persisted:async()=>allow,persist:async()=>true});assert.equal(await p.ensure(),'denied');allow=true;assert.equal(await p.ensure(),'granted');});
 test('unsupported, failed and read-only checks never claim persistence',async()=>{assert.equal(await new Persistence({}).ensure(),'unsupported');assert.equal(await new Persistence({persisted:async()=>{throw Error('denied');},persist:async()=>true}).ensure(),'error');let requested=false;const p=new Persistence({persisted:async()=>false,persist:async()=>{requested=true;}});assert.equal(await p.ensure(false),'denied');assert.equal(requested,false);});

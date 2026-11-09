@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {mkdir,writeFile} from 'node:fs/promises';
 const base=process.env.QA_URL||'http://127.0.0.1:4173';
 const browser=await chromium.launch({headless:true,...(process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{})});
-const reports=new URL('./reports/ui-review/',import.meta.url),screenshots=new URL('../dist/screenshots/',import.meta.url);
+const reports=new URL('./reports/ui-review/',import.meta.url),screenshots=new URL('../src/screenshots/',import.meta.url);
 await mkdir(reports,{recursive:true});await mkdir(screenshots,{recursive:true});const results=[],errors=[];
 const profiles=[{width:280,height:653},{width:320,height:568},{width:390,height:844},{width:768,height:1024},{width:1440,height:960},{width:844,height:390}];
 async function alignedBanner(page){

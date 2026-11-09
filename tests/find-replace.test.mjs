@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {textMatches,replacementEdit,searchNotes} from '../dist/js/find-replace.js';
+import {textMatches,replacementEdit,searchNotes} from '../src/js/find-replace.js';
 test('search is literal, optionally case sensitive, and uses original Unicode offsets',()=>{
  assert.deepEqual(textMatches('👩‍💻 Café café','CAFÉ'),[{from:6,to:10},{from:11,to:15}]);
  assert.deepEqual(textMatches('a.* axy a.*','a.*'),[{from:0,to:3},{from:8,to:11}]);

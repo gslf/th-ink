@@ -4,7 +4,7 @@ import {mkdir} from 'node:fs/promises';
 import {chromium} from 'playwright';
 const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium'});
 const base=process.env.QA_URL||'http://127.0.0.1:4173';
-const screenshots=new URL('../dist/screenshots/',import.meta.url),reports=new URL('./reports/voice-mode/',import.meta.url);
+const screenshots=new URL('../src/screenshots/',import.meta.url),reports=new URL('./reports/voice-mode/',import.meta.url);
 await mkdir(reports,{recursive:true});const errors=[];
 try{
  for(const [width,height,locale,theme] of [[280,653,'it-IT','light'],[320,568,'en-US','dark'],[390,844,'en-US','light'],[760,900,'it-IT','dark'],[1440,960,'en-US','light'],[844,390,'it-IT','light']]){

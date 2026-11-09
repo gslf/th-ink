@@ -29,7 +29,7 @@ try{
   });
   assert.equal(geometry.overflow,false);assert.ok(geometry.toolsBelow&&geometry.toolsAbove);assert.ok(geometry.center<1);assert.ok(geometry.editorWidth<=720);assert.deepEqual(geometry.exitSize,[44,44]);
   await page.screenshot({path:new URL(`${width}-${height}-${locale}-${theme}.png`,captures).pathname,animations:'disabled'});
-  if(locale==='en-US'&&theme==='light'&&[390,1440].includes(width))await page.screenshot({path:new URL(`../dist/screenshots/${width===390?'mobile':'desktop'}-focus-en.png`,import.meta.url).pathname,animations:'disabled'});
+  if(locale==='en-US'&&theme==='light'&&[390,1440].includes(width))await page.screenshot({path:new URL(`../src/screenshots/${width===390?'mobile':'desktop'}-focus-en.png`,import.meta.url).pathname,animations:'disabled'});
   // A virtual keyboard must not remove either input mode or the exit action.
   if(width<=760){await page.evaluate(()=>document.body.classList.add('keyboard-open'));assert.ok(await page.locator('.mode-switch').isVisible());await page.evaluate(()=>document.body.classList.remove('keyboard-open'));}
   await focus.click();assert.ok(await page.locator('#preview').isVisible());assert.ok(await page.locator('#note-title').isVisible());

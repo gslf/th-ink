@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {normalize,parseMarkdown,markdown,paragraphRange,previousParagraphRange,parseCommand,voiceIntent,renderMarkdown,folderPath} from '../dist/js/core.js';
-import {zipFiles} from '../dist/js/archive.js';
+import {normalize,parseMarkdown,markdown,paragraphRange,previousParagraphRange,parseCommand,voiceIntent,renderMarkdown,folderPath} from '../src/js/core.js';
+import {zipFiles} from '../src/js/archive.js';
 test('Interoperable Markdown, Unicode, and folders',()=>{
  const n={title:'Idee è bello',body:'## Punti\n\n- [ ] Caffè\n\n```c\nint x;\n```\n'};
  assert.deepEqual(parseMarkdown(markdown(n)),n);

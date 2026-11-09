@@ -1,6 +1,6 @@
 # th.ink
 
-![th.ink in English](dist/screenshots/desktop-en.png)
+![th.ink in English](src/screenshots/desktop-en.png)
 
 A quiet place to think. Markdown, voice, and very little else.
 
@@ -33,7 +33,8 @@ is uploaded automatically. Keep backups of notes you want to keep.
 ## Under the surface
 
 Plain HTML, CSS, and JavaScript. CodeMirror for editing. C/WebAssembly for search.
-`dist/` contains the maintained application source, not disposable build output.
+`src/` contains the source. The build generates `dist/`, ready to upload.
+Generated files stay out of Git.
 Private configuration, credentials, databases, backups, and downloaded dependencies
 are excluded from Git.
 

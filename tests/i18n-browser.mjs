@@ -7,7 +7,7 @@ import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 const {chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');
 const base=process.env.QA_URL||'http://127.0.0.1:4173';
-const output=fileURLToPath(new URL('../dist/screenshots/',import.meta.url));
+const output=fileURLToPath(new URL('../src/screenshots/',import.meta.url));
 const browser=await chromium.launch({headless:true,...(process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{})});
 const results=[],errors=[];
 const record=(name)=>{results.push(name);console.log('PASS',name);};

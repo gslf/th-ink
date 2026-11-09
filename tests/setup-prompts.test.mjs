@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {SetupPrompts} from '../dist/js/setup-prompts.js';
+import {SetupPrompts} from '../src/js/setup-prompts.js';
 test('installation notice can be dismissed and is absent for installed apps',()=>{const p=new SetupPrompts();assert.equal(p.next,'install');p.dismiss('install');assert.equal(p.next,null);const installed=new SetupPrompts({installed:true});assert.equal(installed.next,null);installed.setInstalled(false);assert.equal(installed.next,'install');installed.setInstalled(true);assert.equal(installed.next,null);});
 test('native installation is triggered once and acceptance is not claimed as a completed install',async()=>{const p=new SetupPrompts();let calls=0;p.offer({prompt:()=>{calls++;return Promise.resolve();},userChoice:Promise.resolve({outcome:'accepted'})});const result=p.install();assert.equal(calls,1);assert.equal(await result,'accepted');assert.equal(p.installed,false);assert.equal(p.next,null);p.setInstalled(true);assert.equal(await p.install(),'installed');assert.equal(calls,1);});
 test('cancelled native prompt is consumed; browsers without a prompt get manual instructions',async()=>{const p=new SetupPrompts();assert.equal(await p.install(),'manual');p.offer({prompt:async()=>{},userChoice:Promise.resolve({outcome:'dismissed'})});assert.equal(await p.install(),'dismissed');assert.equal(p.next,null);assert.equal(await p.install(),'manual');});

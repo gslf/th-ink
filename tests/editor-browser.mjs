@@ -64,7 +64,7 @@ try{
   const styles=await page.locator('.cm-content').evaluate(el=>{const spans=[...el.querySelectorAll('span')];return {heading:spans.some(s=>s.textContent.includes('Room')&&parseFloat(getComputedStyle(s).fontSize)>24),bold:spans.some(s=>s.textContent.includes('bold')&&+getComputedStyle(s).fontWeight>=650),italic:spans.some(s=>s.textContent.includes('italic')&&getComputedStyle(s).fontStyle==='italic')};});assert.ok(styles.heading&&styles.bold&&styles.italic,JSON.stringify(styles));
   await page.evaluate(()=>document.querySelector('#document-scroll').scrollTop=0);await settle(page);
   await page.screenshot({path:`tests/reports/editor/${width}.png`});
-  if([390,1440].includes(width))await page.screenshot({path:`dist/screenshots/${width===390?'mobile':'desktop'}-en.png`});
+  if([390,1440].includes(width))await page.screenshot({path:`src/screenshots/${width===390?'mobile':'desktop'}-en.png`});
   await page.evaluate(async()=>{await(await import('/js/app.js')).flush();});const saved=await value(page);await page.reload();await page.evaluate(async()=>{await(await import('/js/app.js')).appReady;});assert.equal(await value(page),saved);
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   console.log('PASS editor',width,height);await context.close();

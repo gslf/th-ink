@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {detectLanguage,resolveLanguage,validPreference,translate,setLanguagePreference,getLocale} from '../dist/js/i18n.js';
-import english from '../dist/js/locales/en.js';
+import {detectLanguage,resolveLanguage,validPreference,translate,setLanguagePreference,getLocale} from '../src/js/i18n.js';
+import english from '../src/js/locales/en.js';
 
 test('language detection respects browser priority, regional tags, and English fallback',()=>{
  assert.equal(detectLanguage(['it-CH','en-US']),'it');

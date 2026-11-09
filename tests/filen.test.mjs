@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {FilenSync,eventFor,parseEvent,serializeEvent,signature,keyOf} from '../dist/js/filen-sync.js';
-import {FilenSession} from '../dist/js/filen-session.js';
-import {DailyBackup,backupArchive,localDay} from '../dist/js/daily-backup.js';
-import {restoreBackup} from '../dist/js/restore-backup.js';
+import {FilenSync,eventFor,parseEvent,serializeEvent,signature,keyOf} from '../src/js/filen-sync.js';
+import {FilenSession} from '../src/js/filen-session.js';
+import {DailyBackup,backupArchive,localDay} from '../src/js/daily-backup.js';
+import {restoreBackup} from '../src/js/restore-backup.js';
 class DB {
  data=new Map();
  async put(store,value){this.data.set(store+':'+value.id,structuredClone(value));}

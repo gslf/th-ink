@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {VoskEngine} from '../dist/js/voice-engine.js';
-import {LocalVoice} from '../dist/js/voice.js';
-import {Resampler,SpeechSegmenter,AudioQueue} from '../dist/js/audio-pipeline.js';
-import {interpret,parseScreenless,findTextRanges,confirmationSnapshot,confirmationValid,numberedParagraph,interruption} from '../dist/js/screenless.js';
+import {VoskEngine} from '../src/js/voice-engine.js';
+import {LocalVoice} from '../src/js/voice.js';
+import {Resampler,SpeechSegmenter,AudioQueue} from '../src/js/audio-pipeline.js';
+import {interpret,parseScreenless,findTextRanges,confirmationSnapshot,confirmationValid,numberedParagraph,interruption} from '../src/js/screenless.js';
 
 test('resampling: 44.1/48 kHz → 16 kHz without drift between blocks',()=>{
  for(const rate of [44100,48000,16000]){const r=new Resampler(rate),output=[];let left=rate;while(left){const n=Math.min(left,128);r.push(new Float32Array(n).fill(0.25),x=>output.push(x));left-=n;}assert.equal(output.length,16000);assert.ok(output.every(x=>Math.abs(x-.25)<1e-6));}
@@ -43,7 +43,7 @@ test('confirmations: selection, title, content, identity, and expiration',()=>{
 });
 
 test('command grammar requires independent agreement and rejects forced matches',async()=>{
- const {chooseTranscript}=await import('../dist/js/voice-grammar.js');const result=text=>({text,words:[{conf:.9}]});
+ const {chooseTranscript}=await import('../src/js/voice-grammar.js');const result=text=>({text,words:[{conf:.9}]});
  assert.equal(chooseTranscript(result('modalità omaggio'),result('modalità comando'),'dictation').text,'modalità comando');
  assert.equal(chooseTranscript(result('questa è una nota in italiano'),result('cancella nota'),'commands').source,'free');
  assert.equal(chooseTranscript(result(''),result('conferma'),'commands').source,'free');
@@ -62,7 +62,7 @@ test('VAD: quiet speech below the old threshold reaches the recognizer',()=>{
 });
 
 test('uncertain dictation is preserved; commands and arguments require repetition',async()=>{
- const {needsRecognitionRepeat}=await import('../dist/js/screenless.js');
+ const {needsRecognitionRepeat}=await import('../src/js/screenless.js');
  assert.equal(needsRecognitionRepeat({text:'una frase da salvare',confidence:.2},'dictation'),false);
  assert.equal(needsRecognitionRepeat({text:'modalità comando',confidence:.2},'dictation'),true);
  assert.equal(needsRecognitionRepeat({text:'cancella paragrafo',confidence:.2},'commands'),true);

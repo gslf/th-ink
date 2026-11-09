@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {newlineEdit,headingEdit} from '../dist/js/editor-actions.js';
+import {newlineEdit,headingEdit} from '../src/js/editor-actions.js';
 const enter=text=>{const c=newlineEdit(text,text.length);return text.slice(0,c.start)+c.text+text.slice(c.end);};
 test('Enter continues bullets, ordered lists and unchecked tasks; an empty item exits',()=>{
  for(const [text,next] of [['- hello','- '],['  * hello','  * '],['9. hello','10. '],['2) hello','3) '],['- [x] done','- [ ] ']]){
@@ -25,8 +25,8 @@ test('empty nested items climb exactly one real parent at each Enter',()=>{
  assert.equal(enter('3. parent\n    - '),'3. parent\n4. ');
  assert.equal(enter('- [x] parent\n    + [ ] '),'- [x] parent\n- [ ] ');
 });
-import {indentEdit} from '../dist/js/editor-actions.js';
-import {renderMarkdown} from '../dist/js/core.js';
+import {indentEdit} from '../src/js/editor-actions.js';
+import {renderMarkdown} from '../src/js/core.js';
 const indent=(text,position,outdent=false)=>{const c=indentEdit(text,position,position,outdent);return {value:text.slice(0,c.start)+c.text+text.slice(c.end),position:c.selection[1]};};
 test('Tab uses four spaces, alternates valid Markdown markers, and retains the caret',()=>{
  let text='- parent\n- child',position=text.length;
