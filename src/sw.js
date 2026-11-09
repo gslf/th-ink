@@ -1,6 +1,8 @@
 const CACHE='th-ink-shell-version';
 const ASSETS=[];
-self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS.map(url=>new Request(url,{cache:'reload'}))).then(()=>{if(['localhost','127.0.0.1'].includes(self.location.hostname))return self.skipWaiting();})));});
+const INTEGRITY={};
+// Reject partial deployments before replacing the last complete offline version.
+self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS.map(url=>new Request(url,{cache:'reload',integrity:INTEGRITY[url]}))).then(()=>{if(['localhost','127.0.0.1'].includes(self.location.hostname))return self.skipWaiting();})));});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('th-ink-shell-')&&key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim()));});
 self.addEventListener('fetch',e=>{const url=new URL(e.request.url);if(e.request.method!=='GET'||url.origin!==self.location.origin)return;
  if(url.pathname.includes('/api/'))return;

@@ -21,7 +21,9 @@ export function updateServiceWorker(directory){
  const assets=shellAssets(directory),workerPath=join(directory,'sw.js');
  const original=readFileSync(workerPath,'utf8');
  if(!/^const CACHE='th-ink-shell-[a-z0-9]+';/m.test(original)||!/^const ASSETS=\[.*?\];/ms.test(original))throw Error('Service-worker cache declarations were not found.');
- const normalized=original.replace(/^const CACHE='th-ink-shell-[a-z0-9]+';/m,"const CACHE='th-ink-shell-version';").replace(/^const ASSETS=\[.*?\];/ms,`const ASSETS=${JSON.stringify(assets)};`);
+ const integrity=Object.fromEntries(assets.map(asset=>[asset,'sha256-'+createHash('sha256').update(readFileSync(join(directory,asset==='./'?'index.html':asset))).digest('base64')]));
+ if(!/^const INTEGRITY=\{.*?\};/ms.test(original))throw Error('Service-worker integrity declaration was not found.');
+ const normalized=original.replace(/^const CACHE='th-ink-shell-[a-z0-9]+';/m,"const CACHE='th-ink-shell-version';").replace(/^const ASSETS=\[.*?\];/ms,`const ASSETS=${JSON.stringify(assets)};`).replace(/^const INTEGRITY=\{.*?\};/ms,`const INTEGRITY=${JSON.stringify(integrity)};`);
  const hash=createHash('sha256').update(normalized);
  for(const asset of assets){if(asset==='./')continue;hash.update(asset).update('\0').update(readFileSync(join(directory,asset)));}
  const version=hash.digest('hex').slice(0,12);

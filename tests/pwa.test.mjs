@@ -65,7 +65,7 @@ test('offline asset discovery includes nested translations and all manifests wit
   for(const file of ['index.html','style.css','manifest.webmanifest','manifest-it.webmanifest','js/app.js','js/locales/en.js','locales/it.json','assets/icons/sample.png','vendor/filen/sdk.js','screenshots/desktop-en.png','models/test.tar.gz']){
    await mkdir(dirname(join(directory,file)),{recursive:true});await writeFile(join(directory,file),file);
   }
-  await writeFile(join(directory,'sw.js'),"const CACHE='th-ink-shell-old';\nconst ASSETS=[];\nself.addEventListener('fetch',()=>{});\n");
+  await writeFile(join(directory,'sw.js'),"const CACHE='th-ink-shell-old';\nconst ASSETS=[];\nconst INTEGRITY={};\nself.addEventListener('fetch',()=>{});\n");
   const assets=shellAssets(directory);for(const file of ['js/locales/en.js','locales/it.json','manifest-it.webmanifest','assets/icons/sample.png'])assert.ok(assets.includes('./'+file));
   assert.ok(!assets.some(a=>a.includes('/screenshots/')||a.includes('/models/')||a.endsWith('/sw.js')));
   const first=updateServiceWorker(directory);assert.equal(updateServiceWorker(directory).version,first.version);
