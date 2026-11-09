@@ -53,3 +53,35 @@ test('publisher migration forgets directory handles and automatic exports withou
  const p=new Publisher({db,before:async()=>{},snapshot:()=>({notes:[],folders}),enabled:()=>true});await p.restore();
  assert.deepEqual(removed,['publish-directory']);assert(!('automatic' in p.config));assert(!('automatic' in stored.get('publish-config').value));assert.equal(p.worker,undefined);assert.equal(p.config.folder,'public');
 });
+test('site title is required and legacy defaults are replaced without overriding chosen titles',async()=>{
+ assert.throws(()=>validatePublishConfig({...config,title:' '}),/titolo/);
+ for(const chosen of [false,true]){
+  const stored=new Map([['publish-config',{value:{...config,automatic:undefined,title:'Journal',titleChosen:chosen}}]]);
+  const db={get:async(_,id)=>stored.get(id),put:async(_,row)=>stored.set(row.id,row),remove:async()=>{}};
+  const p=new Publisher({db});await p.restore();assert.equal(p.config.title,chosen?'Journal':'');
+  await p.configure({...config,title:'My space'});await p.restore();assert.equal(p.config.title,'My space');
+ }
+});
+test('root index introduces the homepage, resolves links and stays out of articles and RSS',async()=>{
+ const result=await build([note('home',100,{title:'index.md',body:'## Welcome\n\nHOME_INTRO\n\n[[Research/Article]]'}),note('article',20,{title:'Article',folder:'sub',body:'[Home](../index.md)'}),note('nested-index',10,{title:'index',folder:'sub'})]);
+ const html=result.files.find(f=>f.path==='index.html').text,article=result.files.find(f=>f.path.startsWith('posts/article-'));
+ assert.equal(result.count,2);assert(html.indexOf('HOME_INTRO')<html.indexOf('class="journal-entries"'));
+ assert(html.includes('href="./'+article.path+'"'));assert(article.text.includes('href="../index.html"'));
+ assert.equal(result.files.filter(f=>f.path.startsWith('posts/')).length,2);
+ assert(!result.files.find(f=>f.path==='feed.xml').text.includes('HOME_INTRO'));
+ assert(html.includes('Powered by <a'));assert(html.indexOf('class="sidebar-tools"')<html.indexOf('class="sidebar-scroll"'));
+ assert(!html.includes('class="sidebar-footer"'));
+ const search=JSON.parse(result.files.find(f=>f.path==='search-index.json').text);assert.equal(search[0].path,'index.html');assert.equal(search[0].title,config.title);
+ await assert.rejects(()=>build([note('a',1,{title:'index'}),note('b',2,{title:'INDEX.md'})]),/una sola nota index/);
+ const homeOnly=await build([note('home',1,{title:'index',body:'Only an introduction.'})]);assert.equal(homeOnly.count,0);assert(homeOnly.files.find(f=>f.path==='index.html').text.includes('Only an introduction.'));
+});
+test('folder navigation preserves nested names and creation order without leaking private notes',async()=>{
+ const nested=[...folders,{id:'deep',parent:'sub',name:'More & <ideas>'}];
+ const result=await buildPublishedSite({config,assets,notes:selectPublishedNotes([note('old',1,{folder:'deep'}),note('new',5,{folder:'deep'}),note('mid',3,{folder:'sub'}),note('secret',7,{folder:'private'})],nested,'public')});
+ const tree=JSON.parse(result.files.find(f=>f.path==='navigation.json').text);
+ assert.equal(tree.folders[0].name,'Research');assert.equal(tree.folders[0].folders[0].name,'More & <ideas>');
+ assert.deepEqual(tree.folders[0].folders[0].notes.map(n=>n.title),['new','old']);
+ assert.deepEqual(tree.folders[0].notes.map(n=>n.title),['mid']);
+ assert(!JSON.stringify(tree).includes('secret'));assert(managedPath('navigation.json'));
+ const post=result.files.find(f=>f.path.startsWith('posts/new-')).text;assert(post.includes('data-folder="Research/More%20%26%20%3Cideas%3E" open'));assert(post.includes('More &amp; &lt;ideas&gt;'));
+});

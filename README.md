@@ -30,7 +30,9 @@ note bodies. A push service accepting a notification does not guarantee that
 your device will display it.
 
 Journal exports contain only the selected folder and its subfolders. Nothing
-is uploaded automatically. Keep backups of notes you want to keep.
+is uploaded automatically. Choose a site title; an optional `index` note in the
+selected folder introduces the homepage. Subfolders appear in the sidebar.
+Keep backups of notes you want to keep.
 
 ## Under the surface
 

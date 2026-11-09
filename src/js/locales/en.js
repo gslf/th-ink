@@ -2,6 +2,10 @@
 export default {
  'Carattere delle note':'Note font',
  'Solo il testo delle note. Interfaccia e blocchi di codice mantengono il proprio carattere.':'Note text only. The interface and code blocks keep their own fonts.',
+ "Inserisci il titolo del sito.":"Enter a title for your site.",
+ "Come si chiama il tuo sito?":"What is your site called?",
+ "Lascia una sola nota index nella cartella principale.":"Keep only one index note in the root folder.",
+ "Per personalizzare la home, crea una nota chiamata index nella cartella principale. Il suo contenuto apparirà prima degli ultimi articoli.":"To customize the home page, create a note called index in the root folder. Its content will appear before the latest articles.",
  "Trascina per spostare":"Drag to move",
  "Azioni":"Actions",
  "Elemento non disponibile.":"Item unavailable.",

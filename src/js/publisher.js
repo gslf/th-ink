@@ -5,12 +5,13 @@ export class Publisher extends EventTarget {
  async restore(){
   const saved=(await this.db.get('settings','publish-config'))?.value||{};
   this.config=Object.fromEntries(Object.entries(defaultPublishConfig).map(([key,value])=>[key,saved[key]??value]));
+  const legacyTitle=saved.title==='Journal'&&!saved.titleChosen;if(legacyTitle)this.config.title='';
   this.previous=(await this.db.get('settings','publish-routes'))?.value||{};
   // Drop obsolete filesystem permissions; exports never write to a chosen folder.
   await this.db.remove('settings','publish-directory');
-  if(Object.hasOwn(saved,'automatic'))await this.db.put('settings',{id:'publish-config',value:this.config});
+  if(Object.hasOwn(saved,'automatic')||legacyTitle)await this.db.put('settings',{id:'publish-config',value:{...this.config,...(saved.titleChosen?{titleChosen:true}:{})}});
  }
- async configure(config){if(this.busy)throw Error('Attendi la fine della generazione.');const next=validatePublishConfig(config);await this.db.put('settings',{id:'publish-config',value:next});this.config=next;}
+ async configure(config){if(this.busy)throw Error('Attendi la fine della generazione.');const next=validatePublishConfig(config);await this.db.put('settings',{id:'publish-config',value:{...next,titleChosen:true}});this.config=next;}
  async generate(){
   if(this.busy)throw Error('Attendi la fine della generazione.');if(!this.enabled())throw Error('Archivio in sola lettura.');
   this.busy=true;this.notify('Generazione del sito…');

@@ -11,8 +11,9 @@ export function publishSettings({modal,publisher,folders,notes,readOnly}){
  form.append(el('h3',t('Contenuti')));
  const folder=field('folder','Cartella da pubblicare','select');const placeholder=el('option',t('Scegli una cartella'));placeholder.value='';folder.append(placeholder);
  for(const f of folders.filter(f=>!f.deleted).sort((a,b)=>folderPath(a.id,folders).join('/').localeCompare(folderPath(b.id,folders).join('/'),getLocale()))){const option=el('option',folderPath(f.id,folders).join(' / '));option.value=f.id;folder.append(option);}folder.value=publisher.config.folder;folder.required=true;
- const count=el('p','','publish-selection');form.append(count);const selection=()=>{let n=0;try{n=selectPublishedNotes(notes,folders,folder.value).length;}catch{}count.textContent=t('{count} articoli · sottocartelle incluse · cestino escluso',{count:n});};folder.onchange=selection;selection();
- const title=field('title','Titolo del sito');title.required=true;title.maxLength=120;
+ const count=el('p','','publish-selection');form.append(count);const selection=()=>{let n=0;try{n=selectPublishedNotes(notes,folders,folder.value).filter(n=>!n.home).length;}catch{}count.textContent=t('{count} articoli · sottocartelle incluse · cestino escluso',{count:n});};folder.onchange=selection;selection();
+ const title=field('title','Titolo del sito');title.required=true;title.maxLength=120;title.placeholder=t('Come si chiama il tuo sito?');
+ form.append(el('p',t('Per personalizzare la home, crea una nota chiamata index nella cartella principale. Il suo contenuto apparirà prima degli ultimi articoli.')));
  const description=field('description','Descrizione del sito','textarea');description.rows=2;description.maxLength=320;
  field('author','Autore').maxLength=120;
  const language=field('language','Lingua del sito','select');for(const [value,label] of [['it','Italiano'],['en','English']]){const o=el('option',label);o.value=value;language.append(o);}language.value=publisher.config.folder?publisher.config.language:getLanguage();
