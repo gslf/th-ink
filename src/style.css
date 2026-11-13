@@ -846,3 +846,11 @@ dialog::backdrop{background:#15161159;backdrop-filter:none}
 @media(max-width:760px){.format-bar,.focus .format-bar{border-top:0;background:var(--paper)}}
 @media(max-width:480px){.format-bar,.focus .format-bar{border:0}}
 .mode-switch,.theme-options{gap:0;padding:0}
+/* Banner actions are full-height blocks flush with the banner's edges. */
+.setup-toast{gap:0;padding:0;align-items:stretch}
+.setup-toast .primary,.setup-toast #setup-dismiss{align-self:stretch;height:auto;margin:0}
+.setup-toast .primary{min-height:var(--control);padding:0 16px}
+.setup-toast p{align-self:center;padding:6px 12px}
+.library-feedback{padding:0 0 0 12px;align-items:stretch}
+.library-feedback>span{align-self:center;padding-block:6px}
+.library-feedback button{align-self:stretch;height:auto;padding-inline:12px}

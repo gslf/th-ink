@@ -86,6 +86,8 @@ try{
   if(view==='settings'){if(viewport.width<=760)await page.locator('#library-toggle').click();await page.locator('[data-action=settings]').click();}
   if(view==='library')await page.locator('#library-toggle').click();
   if(view==='voice'){await page.locator('#editor .cm-content').press('Control+Home');await page.locator('[data-mode=voice]').click();await page.waitForFunction(()=>!document.querySelector('#voice-status').textContent.startsWith('Checking'));}
+  // Park the pointer on the page margin so no control is captured in its hover state.
+  await page.mouse.move(viewport.width-1,Math.round(viewport.height/2));
   await layout(page);
   await page.screenshot({path:output+name+'.png',animations:'disabled'});
   record('English screenshot '+name+' '+viewport.width+'×'+viewport.height);await context.close();
