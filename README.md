@@ -7,10 +7,10 @@ A quiet place to think. Markdown, voice, and very little else.
 ## Make room for your thoughts
 
 - Write in Markdown. Keep the syntax visible, see the formatting as you type.
-- Choose a font for your notes. Code stays monospace, with offline syntax highlighting.
+- Choose a font and text size for your notes. Code stays monospace, with offline syntax highlighting.
 - Switch between writing and offline dictation, in English or Italian.
 - Go into focus mode. Just the page and the controls you need.
-- Organize notes with folders, favorites, tags, and emoji.
+- Organize notes with folders, favorites, tags, and emoji — for notes and folders alike.
 - Right-click for actions. Drag to move, undo a move, or restore from the trash.
 - Set reminders, including recurring ones.
 - Turn a folder into a static journal. Export one ZIP, with search, RSS, and SEO metadata.

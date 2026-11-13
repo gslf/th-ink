@@ -27,7 +27,7 @@ try{
    const box=s=>document.querySelector(s).getBoundingClientRect(),editor=box('#editor'),tools=box('.format-bar'),footer=box('.editor-footer'),mode=box('.mode-switch'),exit=box('.top-actions [data-action=focus]');
    return {overflow:document.documentElement.scrollWidth>innerWidth,toolsBelow:tools.top>=exit.bottom,toolsAbove:tools.bottom<=footer.top,center:Math.abs((mode.left+mode.right)/2-innerWidth/2),editorWidth:editor.width,exitSize:[exit.width,exit.height]};
   });
-  assert.equal(geometry.overflow,false);assert.ok(geometry.toolsBelow&&geometry.toolsAbove);assert.ok(geometry.center<1);assert.ok(geometry.editorWidth<=720);assert.deepEqual(geometry.exitSize,[44,44]);
+  assert.equal(geometry.overflow,false);assert.ok(geometry.toolsBelow&&geometry.toolsAbove);assert.ok(geometry.center<1);assert.ok(geometry.editorWidth<=720);{const target=await page.evaluate(()=>matchMedia('(pointer:coarse),(max-width:760px)').matches?44:32);assert.deepEqual(geometry.exitSize,[target,target]);}
   await page.screenshot({path:new URL(`${width}-${height}-${locale}-${theme}.png`,captures).pathname,animations:'disabled'});
   if(locale==='en-US'&&theme==='light'&&[390,1440].includes(width))await page.screenshot({path:new URL(`../src/screenshots/${width===390?'mobile':'desktop'}-focus-en.png`,import.meta.url).pathname,animations:'disabled'});
   // A virtual keyboard must not remove either input mode or the exit action.

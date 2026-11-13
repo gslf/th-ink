@@ -14,7 +14,7 @@ async function alignedBanner(page){
  });
  assert.ok(r.button.right<=r.message.x&&r.message.right<=r.close.x,'install action stays left of message and dismissal');
  for(const item of [r.button,r.message,r.close])assert.ok(Math.abs(item.cy-r.panel.cy)<1,'install row is vertically centered');
- assert.ok(r.button.height>=44&&r.close.height>=44,'install touch targets');assert.ok(r.textFits,'complete install message');
+ const target=await page.evaluate(()=>matchMedia('(pointer:coarse),(max-width:760px)').matches?44:32);assert.ok(r.button.height>=target&&r.close.height>=target,'install targets follow the pointer density');assert.ok(r.textFits,'complete install message');
 }
 async function fits(page,selector){
  const failures=await page.locator(selector).evaluateAll(elements=>elements.filter(el=>el.getClientRects().length&&!el.hidden).flatMap(el=>{const r=el.getBoundingClientRect();return r.left<-.5||r.right>innerWidth+.5?[el.id||el.textContent.trim()]:[];}));

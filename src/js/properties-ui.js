@@ -1,6 +1,6 @@
 import {mountEmojiPicker} from './emoji-picker.js';
 import {t} from './i18n.js';
-import {noteProperties,normalizeTags} from './note-properties.js';
+import {noteProperties,normalizeTags,normalizeEmoji} from './note-properties.js';
 export function mountNoteProperties(parent,note,knownTags,{save,cancel}){
  const el=(tag,value,cls)=>{const node=document.createElement(tag);if(value)node.textContent=value;if(cls)node.className=cls;return node;};
  const form=el('form',null,'properties-form'),error=el('p',null,'properties-error');error.setAttribute('role','alert');parent.append(form);
@@ -12,4 +12,12 @@ export function mountNoteProperties(parent,note,knownTags,{save,cancel}){
  tags.oninput=()=>{error.textContent='';};details.append(error);
  const actions=el('div',null,'buttons'),back=el('button',t('Annulla')),submit=el('button',t('Salva'),'primary');back.type='button';back.onclick=cancel;submit.type='submit';actions.append(back,submit);form.append(actions);
  form.onsubmit=async event=>{event.preventDefault();if(submit.disabled)return;try{const properties=noteProperties({emoji:emoji.value,tags:tags.value.split(',')});submit.disabled=true;await save(properties);}catch(e){error.textContent=t(e.message);}finally{submit.disabled=false;}};
+}
+// Folders carry an emoji only: the same picker, without note tags.
+export function mountFolderEmoji(parent,folder,{save,cancel}){
+ const el=(tag,value,cls)=>{const node=document.createElement(tag);if(value)node.textContent=value;if(cls)node.className=cls;return node;};
+ const form=el('form',null,'properties-form folder-emoji-form'),error=el('p',null,'properties-error');error.setAttribute('role','alert');parent.append(form);
+ const emoji=mountEmojiPicker(form,folder.emoji||'',()=>{error.textContent='';},{defaultIcon:'folder',label:'Emoji della cartella'});form.append(error);
+ const actions=el('div',null,'buttons'),back=el('button',t('Annulla')),submit=el('button',t('Salva'),'primary');back.type='button';back.onclick=cancel;submit.type='submit';actions.append(back,submit);form.append(actions);
+ form.onsubmit=async event=>{event.preventDefault();if(submit.disabled)return;try{const value=normalizeEmoji(emoji.value);submit.disabled=true;await save(value);}catch(e){error.textContent=t(e.message);}finally{submit.disabled=false;}};
 }

@@ -1,6 +1,8 @@
 // Italian source messages are stable translation keys. User content is never translated.
 export default {
  'Carattere delle note':'Note font',
+ 'Dimensione':'Size',
+ 'Emoji della cartella':'Folder emoji',
  'Solo il testo delle note. Interfaccia e blocchi di codice mantengono il proprio carattere.':'Note text only. The interface and code blocks keep their own fonts.',
  "Inserisci il titolo del sito.":"Enter a title for your site.",
  "Come si chiama il tuo sito?":"What is your site called?",

@@ -1,4 +1,4 @@
-import {NoteFont,noteFonts} from './note-font.js';
+import {NoteFont,noteFonts,noteSizes} from './note-font.js';
 import {mountLibrary} from './library-actions.js';
 import {createToast} from './toast.js';
 import {Publisher} from './publisher.js';
@@ -190,6 +190,10 @@ function renderList(){
  const folder=state.folders.find(f=>f.id===state.filter);$('.new-note').title=folder?t('Nuova nota in ')+folder.name:t('Nuova nota senza cartella');
 }
 function refresh(){renderList();}
+// Replays only on an explicit user action; background re-renders stay still.
+function swapList(){for(const el of [$('#note-tree'),$('#reminder-list')]){el.classList.remove('list-swap');void el.offsetWidth;el.classList.add('list-swap');}}
+const applePlatform=/Mac|iPhone|iPad|iPod/i.test(navigator.userAgentData?.platform||navigator.platform||'');
+function renderShortcutHints(){const key=$('.search-trigger kbd');if(key)key.textContent=applePlatform?'⌘ K':'Ctrl K';}
 async function openNote(id){
  await flush();if(note())await db.revision(note());
  const previousId=state.current;state.current=id;state.pending=null;editGroup=false;const n=note();if(!n)setFocus(false);
@@ -346,7 +350,12 @@ async function settings(){
  const fontSelect=document.createElement('select');fontSelect.id='note-font';fontSelect.name='note-font';
  for(const font of noteFonts){const option=text('option',font.label);option.value=font.id;fontSelect.append(option);}fontSelect.value=noteFont.preference;
  fontSelect.onchange=async()=>{try{await noteFont.set(fontSelect.value);}catch(e){fontSelect.value=noteFont.preference;report(e);}};
- el.append(fontLabel,fontSelect,text('p',t('Solo il testo delle note. Interfaccia e blocchi di codice mantengono il proprio carattere.')));
+ const sizeLabel=text('label',t('Dimensione'));sizeLabel.htmlFor='note-font-size';
+ const sizeSelect=document.createElement('select');sizeSelect.id='note-font-size';sizeSelect.name='note-font-size';
+ for(const size of noteSizes){const option=text('option',size+' px');option.value=size;sizeSelect.append(option);}sizeSelect.value=noteFont.size;
+ sizeSelect.onchange=async()=>{try{await noteFont.setSize(sizeSelect.value);}catch(e){sizeSelect.value=noteFont.size;report(e);}};
+ const fontRow=text('div','','field-row'),fontField=document.createElement('div'),sizeField=document.createElement('div');fontField.append(fontLabel,fontSelect);sizeField.append(sizeLabel,sizeSelect);fontRow.append(fontField,sizeField);
+ el.append(fontRow,text('p',t('Solo il testo delle note. Interfaccia e blocchi di codice mantengono il proprio carattere.')));
  const field=document.createElement('fieldset');field.className='theme-picker';field.append(text('legend',t('Aspetto')));const options=text('div','','theme-options');
  for(const [value,label,symbol] of [['light',t('Chiaro'),'☀'],['dark',t('Scuro'),'☾'],['auto','Auto','◐']]){const item=document.createElement('label'),input=document.createElement('input');input.type='radio';input.name='appearance';input.value=value;input.checked=appearance.preference===value;input.onchange=()=>{if(input.checked)appearance.set(value).catch(report);};const icon=text('span',symbol);icon.setAttribute('aria-hidden','true');item.append(input,icon,text('span',label));options.append(item);}field.append(options);el.append(field,text('p',t('Auto segue l’aspetto del dispositivo.')));
  const row=(parent,name,detail,label,fn)=>{const r=text('div','','setting-row'),left=text('div',name);if(detail)left.append(text('small',detail));r.append(left,button(label,fn));parent.append(r);};
@@ -373,7 +382,7 @@ async function changeLanguage(value,{persist=true}={}){
  try{setLanguagePreference(value,{persist});}catch{setLanguagePreference(value,{persist:false});}
  voice.lang=getLocale();voice.mode='dictation';
  await noteFont.restore();
- translateStatic();setupIcons();updateLanguageMetadata();renderNoteProperties();
+ translateStatic();setupIcons();renderShortcutHints();updateLanguageMetadata();renderNoteProperties();
  editor.lang=title.lang=getLanguage();
  $('#transcript').textContent='';notificationToast.hide();
  renderSort();
@@ -485,7 +494,7 @@ voice.addEventListener('state',async({detail})=>{
 });
 async function importFiles(files){if(state.readOnly)throw Error(t('Archivio aperto in un’altra finestra.'));let first=null;const imported=[];for(const file of files){if(/\.json$/i.test(file.name)){if(file.size>100*1024*1024)throw Error(t('Backup troppo grande (massimo 100 MB).'));await flush();const restored=restoreBackup(await file.text());for(const f of restored.folders){await db.put('folders',f);state.folders.push(f);}for(const n of restored.notes){await db.saveNote(n);state.notes.push(n);imported.push(n);first??=n.id;}for(const h of restored.history)await db.put('history',h);continue;}if(!/\.(md|markdown|txt)$/i.test(file.name))continue;if(file.size>10*1024*1024){toast(t('File troppo grande: {name}. Limite 10 MB.',{name:file.name}));continue;}let parent=null;const path=file.webkitRelativePath?.split('/').slice(0,-1)||[];for(const name of path){let f=state.folders.find(f=>!f.deleted&&f.parent===parent&&f.name===name);if(!f)f=await addFolder(name,parent);parent=f.id;}const content=parseMarkdown(await file.text(),file.name);const n={...content,id:uid(),folder:parent,created:Date.now(),updated:Date.now(),pinned:false,deleted:false};await db.saveNote(n);state.notes.push(n);imported.push(n);first??=n.id;}index(imported);cloud.schedule();dailyBackup.invalidate();state.filter='all';refresh();if(first)await openNote(first);toast(t('{count} note importate.',{count:imported.length}));}
 for(const id of ['#import-files','#import-directory'])$(id).onchange=e=>{importFiles([...e.target.files]).catch(report).finally(()=>e.target.value='');};
-document.addEventListener('click',e=>{const action=e.target.closest('[data-action]');if(action)execute(action.dataset.action,{level:action.dataset.level}).catch(report);const filter=e.target.closest('[data-filter]');if(filter){state.filter=filter.dataset.filter;refresh();}const mode=e.target.closest('[data-mode]');if(mode)setMode(mode.dataset.mode).catch(report);if(e.target.closest('[data-close]')){if(e.target.closest('#modal'))closeModal();else $('#palette').close();}});
+document.addEventListener('click',e=>{const action=e.target.closest('[data-action]');if(action)execute(action.dataset.action,{level:action.dataset.level}).catch(report);const filter=e.target.closest('[data-filter]');if(filter){state.filter=filter.dataset.filter;refresh();swapList();}const mode=e.target.closest('[data-mode]');if(mode)setMode(mode.dataset.mode).catch(report);if(e.target.closest('[data-close]')){if(e.target.closest('#modal'))closeModal();else $('#palette').close();}});
 const headingToggle=$('#heading-toggle'),headingMenu=$('#heading-menu');
 function closeHeadings(){headingMenu.hidden=true;headingToggle.setAttribute('aria-expanded','false');}
 headingToggle.onclick=()=>{headingMenu.hidden=!headingMenu.hidden;headingToggle.setAttribute('aria-expanded',String(!headingMenu.hidden));};
@@ -500,7 +509,7 @@ title.addEventListener('beforeinput',()=>{if(!editGroup){checkpoint();editGroup=
 editor.addEventListener('keydown',e=>{if(e.key==='Tab'&&!e.ctrlKey&&!e.metaKey){e.preventDefault();execute(e.shiftKey?'outdent':'indent').catch(report);}if(e.key==='Escape'){voice.stopReading();$('.format-bar button').focus();}});
 editor.addEventListener('input',changed);title.addEventListener('input',()=>{title.value=title.value.replace(/[\r\n]+/g,' ');changed();});editor.addEventListener('blur',()=>{editGroup=false;});title.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();focusEditor();}});
 $('#write-tab').onclick=()=>setPreview(false);$('#preview-tab').onclick=()=>setPreview(true);$('#pin-note').onclick=()=>{execute('pin').catch(report);$('#pin-note').classList.remove('pin-pop');requestAnimationFrame(()=>$('#pin-note').classList.add('pin-pop'));};
-$('#add-folder').onclick=folderForm;$('#sort').onclick=()=>{state.sort=state.sort==='updated'?'title':'updated';renderList();toast(state.sort==='title'?t('Note ordinate per titolo.'):t('Note ordinate per ultima modifica.'));};
+$('#add-folder').onclick=folderForm;$('#sort').onclick=()=>{state.sort=state.sort==='updated'?'title':'updated';renderList();swapList();toast(state.sort==='title'?t('Note ordinate per titolo.'):t('Note ordinate per ultima modifica.'));};
 $('#library-toggle').onclick=()=>{$('#app').classList.remove('focus');setLibrary(true);};$('#close-library').onclick=()=>setLibrary(false);
 document.addEventListener('keydown',e=>{if(!$('#app').classList.contains('library-open')||!mobileLayout.matches||$('#modal').open||$('#palette').open)return;if(e.key==='Escape'){e.preventDefault();setLibrary(false);}if(e.key==='Tab'){const targets=[...$('#sidebar').querySelectorAll('a,button,[tabindex="0"]')].filter(b=>!b.disabled&&b.getClientRects().length);const first=targets[0],last=targets.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}});
 $('#palette').addEventListener('close',()=>{$('#palette-input').setAttribute('aria-expanded','false');$('#palette-input').removeAttribute('aria-activedescendant');});
@@ -514,12 +523,12 @@ document.addEventListener('keydown',e=>{
  if(id==='replace')openFindReplace('note');else if(id==='replaceAllNotes')openFindReplace('all');else openPalette();
 },true);
 document.addEventListener('keydown',e=>{if(!(e.ctrlKey||e.metaKey))return;const key=e.key.toLowerCase();const global={k:'search'};let id=global[key];if(!$('#modal').open&&!$('#palette').open){if(key==='n'&&e.altKey)id='new';else if(key==='f'&&e.shiftKey)id='focus';else if(key==='p'&&e.shiftKey)id='preview';else if(['#editor','#note-title'].some(s=>e.target.closest(s))||key==='s')id=({b:'bold',i:'italic',z:e.shiftKey?'redo':'undo',y:'redo'})[key]||id;}if(id){e.preventDefault();execute(id).catch(report);}});
-window.addEventListener('resize',resize);window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();setupPrompts.offer(e);});window.addEventListener('appinstalled',()=>{setupPrompts.setInstalled(true);void persistence.ensure();});
+window.addEventListener('resize',resize);$('#app').addEventListener('transitionend',e=>{if(e.target===$('#app')&&e.propertyName==='grid-template-columns')resize();});window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();setupPrompts.offer(e);});window.addEventListener('appinstalled',()=>{setupPrompts.setInstalled(true);void persistence.ensure();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){flush().catch(report);voice.stop();releaseWakeLock();}});
 window.addEventListener('beforeunload',e=>{if(state.dirty.size||state.saving){e.preventDefault();e.returnValue='';}});
 const online=()=>$('#offline-state').textContent=navigator.onLine?'':t('Offline · puoi scrivere');window.addEventListener('online',online);window.addEventListener('offline',online);
 channel?.addEventListener('message',async({data})=>{if(data.type!=='changed')return;const latest=await db.get('notes',data.id);if(!latest)return;const current=state.notes.find(n=>n.id===data.id);if(current&&current.updated>=latest.updated)return;if(data.id===state.current&&state.dirty.has(data.id))return toast(t('Nota modificata in un’altra finestra. Esporta una copia prima di ricaricare.'));if(data.id===state.current){toast(t('Questa nota è cambiata in un’altra finestra. Riaprila per aggiornarla.'));return;}if(current)Object.assign(current,latest);else state.notes.push(latest);index([latest]);refresh();});
-const library=mountLibrary({state,db,tree,flush,report,form,openNote,execute,editor,edit,addFolder,createNote,changed:async(notes,folders)=>{
+const library=mountLibrary({state,db,tree,flush,report,form,modal,closeModal,openNote,execute,editor,edit,addFolder,createNote,changed:async(notes,folders)=>{
  const byId=new Map(state.notes.map(n=>[n.id,n])),latest=notes.map(n=>byId.get(n.id)).filter(Boolean);index(latest);
  if(state.folders.some(f=>f.id===state.filter&&f.deleted))state.filter='all';
  const current=note();if(current){
@@ -543,7 +552,7 @@ async function boot(){
  const savedLanguage=(await db.get('settings','language'))?.value;
  if(validPreference(savedLanguage))setLanguagePreference(savedLanguage,{persist:false});
  await noteFont.restore();
- translateStatic();setupIcons();updateLanguageMetadata();renderNoteProperties();voice.lang=getLocale();editor.lang=title.lang=getLanguage();
+ translateStatic();setupIcons();renderShortcutHints();updateLanguageMetadata();renderNoteProperties();voice.lang=getLocale();editor.lang=title.lang=getLanguage();
  void persistence.ensure();
  tree.collapsed=new Set((await db.get('settings','collapsed-folders'))?.value||[]);
  if(navigator.locks)await new Promise(resolve=>{navigator.locks.request(($('#app').dataset.testDatabase?'th-ink-writer:'+$('#app').dataset.testDatabase:'th-ink-writer'),{ifAvailable:true},async lock=>{state.readOnly=!lock;resolve();if(lock)await new Promise(()=>{});}).catch(()=>resolve());});

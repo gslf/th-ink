@@ -7,7 +7,7 @@ export async function emojiCatalog(language){
  return catalogs.get(language);
 }
 export function searchEmoji(entries,query){const terms=fold(query).trim().split(/\s+/).filter(Boolean);return entries.filter(e=>terms.every(term=>e.search.includes(term)));}
-export function mountEmojiPicker(parent,value,onchange){
+export function mountEmojiPicker(parent,value,onchange,{defaultIcon='notes',label='Emoji della nota'}={}){
  const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text)n.textContent=text;if(cls)n.className=cls;return n;};
  const root=el('section',null,'emoji-picker'),identity=el('div',null,'emoji-identity'),preview=el('span',null,'emoji-preview'),selected=el('span',null,'emoji-selected');preview.setAttribute('aria-hidden','true');selected.setAttribute('role','status');
  const reset=el('button',t('Usa icona predefinita'),'emoji-reset');reset.type='button';reset.onclick=()=>choose('');identity.append(preview,selected,reset);root.append(identity);
@@ -18,8 +18,8 @@ export function mountEmojiPicker(parent,value,onchange){
  let data,category=-1,selection=value,visible=[],shown=0;
  const icons=['✦','😀','👋','🌿','🍋','🌍','⚽','💡','♡','🏳️'];
  function variant(e){return e.skins.find(s=>s.tone===Number(tone.value))||e;}
- function choose(emoji){selection=emoji;updateIdentity();for(const b of grid.children)b.setAttribute('aria-pressed',String(b.dataset.emoji===selection));onchange(emoji);}
- function updateIdentity(){preview.replaceChildren(selection?document.createTextNode(selection):icon('notes'));const entry=data?.entries.flatMap(e=>[e,...e.skins]).find(e=>e.emoji===selection);selected.textContent=selection?(entry?.label||t('Emoji della nota')):t('Icona predefinita');}
+ function choose(emoji){selection=emoji;updateIdentity();preview.classList.remove('emoji-pop');void preview.offsetWidth;preview.classList.add('emoji-pop');for(const b of grid.children)b.setAttribute('aria-pressed',String(b.dataset.emoji===selection));onchange(emoji);}
+ function updateIdentity(){preview.replaceChildren(selection?document.createTextNode(selection):icon(defaultIcon));const entry=data?.entries.flatMap(e=>[e,...e.skins]).find(e=>e.emoji===selection);selected.textContent=selection?(entry?.label||t(label)):t('Icona predefinita');}
  function more(){const fragment=document.createDocumentFragment();for(const e of visible.slice(shown,shown+90)){const v=variant(e),b=el('button',v.emoji);b.type='button';b.dataset.emoji=v.emoji;b.title=v.label;b.setAttribute('aria-label',v.label);b.setAttribute('aria-pressed',String(selection===v.emoji));b.onclick=()=>choose(v.emoji);fragment.append(b);}shown=Math.min(shown+90,visible.length);grid.append(fragment);}
  function render(){if(!data)return;const query=search.value.trim();const common=['📝','💡','📚','💼','🎯','🌿','🎨','🧪','🚀','❤️','📌','✨','🗓️','✅','🎵','🌍','☕','🏠','💻','🧠'];
   visible=query?searchEmoji(data.entries,query):category===-1?common.map(v=>data.entries.find(e=>e.emoji===v)).filter(Boolean):data.entries.filter(e=>e.group===category);

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {FilenSync,eventFor,parseEvent,serializeEvent,signature,keyOf} from '../src/js/filen-sync.js';
+import {FilenSync,eventFor,parseEvent,serializeEvent,signature,keyOf,cleanItem} from '../src/js/filen-sync.js';
 import {FilenSession} from '../src/js/filen-session.js';
 import {DailyBackup,backupArchive,localDay} from '../src/js/daily-backup.js';
 import {restoreBackup} from '../src/js/restore-backup.js';
@@ -61,4 +61,12 @@ test('Filen: emoji and multiple tags synchronize, including removal on another d
  const r=new Remote(),a=await client(r,[{...note(),emoji:'💡',tags:['Ideas','Work']}]);await a.sync.sync();
  const b=await client(r);await b.sync.sync();assert.equal(b.state[0].emoji,'💡');assert.deepEqual(b.state[0].tags,['Ideas','Work']);
  b.state[0].emoji='';b.state[0].tags=[];b.state[0].updated++;await b.sync.sync();await a.sync.sync();assert.equal(a.state[0].emoji,undefined);assert.equal(a.state[0].tags,undefined);assert.equal(a.state[0].body,note().body);
+});
+test('Folder emoji: synced and restored when valid, absent when empty, rejected when not an emoji',()=>{
+ const folder={kind:'folder',id:'f',name:'Idee',parent:null};
+ assert.deepEqual(cleanItem({...folder,emoji:'📚'}),{...folder,emoji:'📚'});
+ assert.equal(signature(cleanItem({...folder,emoji:null})),signature(cleanItem(folder)));
+ assert.throws(()=>cleanItem({...folder,emoji:'<b>'}));assert.throws(()=>cleanItem({...folder,emoji:'📚📚'}));
+ const restored=restoreBackup(JSON.stringify({format:'th.ink-backup',version:1,notes:[],folders:[{id:'f',name:'Idee',parent:null,emoji:'📚'}],history:[]}));
+ assert.equal(restored.folders[0].emoji,'📚');
 });

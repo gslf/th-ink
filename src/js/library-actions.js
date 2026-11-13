@@ -3,10 +3,11 @@ import {folderPath,normalize} from './core.js';
 import {libraryIndex,descendants,libraryPlan,validateMove} from './library-model.js';
 import {freshRestoredReminders} from './reminder-model.js';
 import {normalizeTags} from './note-properties.js';
+import {mountFolderEmoji} from './properties-ui.js';
 import {ContextMenu} from './context-menu.js';
 import {LibraryInteractions} from './library-interactions.js';
 
-export function mountLibrary({state,db,tree,flush,changed,report,form,openNote,execute,editor,edit,addFolder,createNote}){
+export function mountLibrary({state,db,tree,flush,changed,report,form,modal,closeModal,openNote,execute,editor,edit,addFolder,createNote}){
  const history=[];let busy=false;
  const menu=new ContextMenu(report),feedback=document.createElement('div');feedback.className='library-feedback';feedback.hidden=true;document.body.append(feedback);
  const status=document.createElement('span');status.setAttribute('role','status');const undoButton=document.createElement('button');feedback.append(status,undoButton);
@@ -48,6 +49,7 @@ export function mountLibrary({state,db,tree,flush,changed,report,form,openNote,e
  const folderChoices=source=>{const index=libraryIndex(state.notes,state.folders),excluded=source.kind==='folder'?descendants(index,source.id):new Set();return [['',t('Livello principale')],...state.folders.filter(f=>!f.deleted&&!excluded.has(f.id)).map(f=>[f.id,folderPath(f.id,state.folders).join(' / ')]).sort((a,b)=>a[1].localeCompare(b[1]))];};
  function moveDialog(source){const item=get(source);if(!item)return;form(t('Sposta in…'),[{name:'folder',label:t('Cartella di destinazione'),options:folderChoices(source),value:item.parent||item.folder||''}],v=>perform(source,'move',v.folder||null));}
  function rename(source){const item=get(source);if(!item)return;const key=source.kind==='folder'?'name':'title';form(t('Rinomina'),[{name:'name',label:t('Nome'),required:true,value:item[key]}],async v=>{const name=v.name.trim();if(!name||name.length>1000)throw Error('Scegli un nome valido.');if(source.kind==='folder'&&state.folders.some(f=>f.id!==item.id&&!f.deleted&&f.parent===item.parent&&normalize(f.name)===normalize(name)))throw Error('Esiste già una cartella con questo nome.');await apply([{...source,before:{[key]:item[key]},after:{[key]:name}}]);message(t('Archivio aggiornato.'));});}
+ function folderEmoji(source){const item=get(source);if(!item||item.deleted)return;writable();mountFolderEmoji(modal(t('Emoji della cartella')),item,{cancel:closeModal,save:async emoji=>{const before=item.emoji||null,after=emoji||null;if(before!==after){await apply([{...source,before:{emoji:before},after:{emoji:after}}]);message(t('Archivio aggiornato.'));}closeModal();}});}
  const command=(label,glyph,run,disabled=false,danger=false)=>({label:t(label),icon:glyph,run,disabled,danger});
  function items(source){
   if(source.kind==='tag')return [];
@@ -56,7 +58,9 @@ export function mountLibrary({state,db,tree,flush,changed,report,form,openNote,e
   if(item.deleted){rows.push(command('Ripristina','undo',()=>perform(source,'restore'),locked),command('Sposta in…','move',()=>moveDialog(source),locked));return rows;}
   if(source.kind==='note')rows.push(command('Apri nota','notes',()=>openNote(source.id)),command('Duplica nota','copy',()=>duplicate(source),locked));
   else rows.push(command('Nuova nota','plus',()=>createNote(source.id),locked),command('Nuova cartella','folder',()=>form(t('Nuova cartella'),[{name:'name',label:t('Nome'),required:true}],v=>addFolder(v.name,source.id)),locked));
-  rows.push(command('Rinomina','rename',()=>rename(source),locked),command('Sposta in…','move',()=>moveDialog(source),locked));
+  rows.push(command('Rinomina','rename',()=>rename(source),locked));
+  if(source.kind==='folder')rows.push(command('Emoji della cartella','emoji',()=>folderEmoji(source),locked));else if(source.id===state.current)rows.push(command('Emoji e tag','emoji',()=>execute('properties'),locked));
+  rows.push(command('Sposta in…','move',()=>moveDialog(source),locked));
   if(source.kind==='note')rows.push(command(item.pinned?'Rimuovi dai preferiti':'Aggiungi ai preferiti','star',()=>apply([{...source,before:{pinned:!!item.pinned},after:{pinned:!item.pinned}}]),locked));
   rows.push(null,command('Sposta nel cestino','trash',()=>perform(source,'trash'),locked,true));return rows;
  }
@@ -92,5 +96,5 @@ export function mountLibrary({state,db,tree,flush,changed,report,form,openNote,e
  }
  documentRoot.addEventListener('contextmenu',editorMenu);
  documentRoot.addEventListener('keydown',e=>{if(e.key==='ContextMenu'||e.key==='F10'&&e.shiftKey)editorMenu(e);});
- return {perform,duplicate,undo,moveDialog,menu,interactions,apply,get busy(){return busy;}};
+ return {perform,duplicate,undo,moveDialog,folderEmoji,menu,interactions,apply,get busy(){return busy;}};
 }

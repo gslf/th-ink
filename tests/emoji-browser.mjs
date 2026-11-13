@@ -10,7 +10,7 @@ try{for(const [width,height,locale,theme] of [[280,568,'it-IT','light'],[390,844
  await page.reload();await page.evaluate(async()=>{await(await import('/js/app.js')).appReady;});await context.setOffline(true);await page.locator('#note-properties').click();await page.locator('.emoji-categories button').first().waitFor();assert.equal(await page.locator('.emoji-categories button').count(),10);
  await page.screenshot({path:`tests/reports/emoji/${width}-catalog.png`});
  assert.equal(await page.locator('#modal').evaluate(e=>e.scrollWidth>e.clientWidth),false);
- const sizes=await page.locator('.emoji-categories button,.emoji-grid button').evaluateAll(nodes=>nodes.map(e=>({w:e.getBoundingClientRect().width,h:e.getBoundingClientRect().height})));assert.ok(sizes.every(s=>s.w>=36&&s.h>=44));
+ const sizes=await page.locator('.emoji-categories button,.emoji-grid button').evaluateAll(nodes=>nodes.map(e=>({w:e.getBoundingClientRect().width,h:e.getBoundingClientRect().height})));{const target=await page.evaluate(()=>matchMedia('(pointer:coarse),(max-width:760px)').matches?44:32);assert.ok(sizes.every(s=>s.w>=32&&s.h>=target),'emoji targets follow the pointer density');}
  await page.locator('.emoji-categories button[data-category="1"]').click();const before=await page.locator('.emoji-grid button').count();await page.locator('.emoji-results').evaluate(e=>e.scrollTop=e.scrollHeight);await page.waitForFunction(before=>document.querySelectorAll('.emoji-grid button').length>before,before);assert.ok(await page.locator('.emoji-grid button').count()>before);
  await page.locator('#emoji-search').fill(locale.startsWith('it')?'pollice in su':'thumbs up');
  // Use the Unicode glyph as a locale-independent query when testing tone variants.

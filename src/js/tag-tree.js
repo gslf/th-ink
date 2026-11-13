@@ -1,11 +1,15 @@
 import {t,getLocale} from './i18n.js';
 import {icon} from './icons.js';
 import {treeControls} from './tree-controls.js';
-const HEIGHT=44,OVERSCAN=5;
+const OVERSCAN=5;
+// Row height follows the density set in CSS (--tree-row), compact or touch.
+let HEIGHT=44;
+const measure=root=>{const value=parseFloat(getComputedStyle(root).getPropertyValue('--tree-row'));HEIGHT=value>0?value:44;};
 // Prefix sums allow direct access to any row without flattening duplicated notes.
 export class TagTree {
- constructor(root,{open,toggle}){this.root=root;this.open=open;this.toggle=toggle;this.segments=[];this.total=0;this.active=0;this.frame=0;root.addEventListener('scroll',()=>{if(!this.enabled||this.frame)return;this.frame=requestAnimationFrame(()=>{this.frame=0;this.paint();});},{passive:true});this.resize=new ResizeObserver(()=>{if(this.enabled)this.paint();});this.resize.observe(root);}
+ constructor(root,{open,toggle}){this.root=root;this.open=open;this.toggle=toggle;this.segments=[];this.total=0;this.active=0;this.frame=0;root.addEventListener('scroll',()=>{if(!this.enabled||this.frame)return;this.frame=requestAnimationFrame(()=>{this.frame=0;this.paint();});},{passive:true});this.resize=new ResizeObserver(()=>{if(this.enabled){measure(root);this.paint();}});this.resize.observe(root);}
  render({tagIndex,current,sort},collapsed){
+  measure(this.root);
   if(this.mode!=='tags')this.root.scrollTop=0;this.enabled=true;this.current=current;this.collapsed=collapsed;this.mode='tags';this.filter='tags';this.root.classList.add('virtual-tags');
   const focused=this.root.contains(document.activeElement),old=this.row(this.active),anchor=this.row(Math.floor(this.root.scrollTop/HEIGHT)),offset=this.root.scrollTop%HEIGHT;
   let start=0;this.segments=tagIndex.ordered(getLocale()).map((group,position)=>{group.depth=0;group.position=position+1;group.parent=null;const notes=collapsed.has(group.id)?[]:tagIndex.members(group,sort,getLocale()),segment={group,notes,header:true,start,end:start+1+notes.length};group.start=start;start=segment.end;return segment;});this.total=start;for(const s of this.segments)s.group.siblings=this.segments.length;
@@ -14,6 +18,7 @@ export class TagTree {
   this.paint();if(focused)this.focus(this.active,false);
  }
  renderArchive(data,collapsed,model){
+  measure(this.root);
   const focused=this.root.contains(document.activeElement),old=this.row(this.active),anchor=this.row(Math.floor(this.root.scrollTop/HEIGHT)),offset=this.root.scrollTop%HEIGHT;
   if(this.mode!=='archive'||this.filter!==data.filter)this.root.scrollTop=0;this.enabled=true;this.mode='archive';this.current=data.current;this.filter=data.filter;this.collapsed=collapsed;this.root.classList.add('virtual-tags');
   const cacheKey=[data.tagIndex.version,data.sort,getLocale(),data.filter,JSON.stringify(data.folders),JSON.stringify([...collapsed])].join('|');
@@ -34,7 +39,7 @@ export class TagTree {
   const spacer=height=>{const li=document.createElement('li');li.setAttribute('role','presentation');li.style.height=height+'px';li.className='tree-spacer';return li;};fragment.append(spacer(start*HEIGHT));
   for(let i=start;i<end;i++){const {group,note,segment}=this.row(i),li=document.createElement('li'),row=document.createElement('div'),label=document.createElement('span');li.setAttribute('role','treeitem');li.dataset.row=i;li.dataset.key=note?`note:${group.id}:${note.id}`:'folder'+group.id;li.tabIndex=i===this.active?0:-1;li.setAttribute('aria-level',group.depth+(note?2:1));li.setAttribute('aria-posinset',note?i-segment.start+(segment.header?0:1)+(segment.offset||0):group.position);li.setAttribute('aria-setsize',note?(segment.siblings??segment.notes.length):group.siblings);row.className='tree-row';row.style.paddingLeft=8+Math.min(group.depth+(note?1:0),8)*16+'px';label.className='tree-name';label.textContent=note?(note.title||t('Senza titolo')):group.name;li.setAttribute('aria-label',label.textContent);
    if(note){li.dataset.noteId=note.id;li.setAttribute('aria-selected',String(note.id===this.current));const glyph=note.emoji?document.createElement('span'):icon('notes');if(note.emoji){glyph.className='tree-emoji';glyph.textContent=note.emoji;glyph.setAttribute('aria-hidden','true');}row.append(glyph,label);if(note.pinned){const star=document.createElement('span');star.className='tree-star';star.textContent='✦';star.setAttribute('aria-label',t('Preferita'));row.append(star);}}
-   else{li.dataset.folderId=group.id;if(group.tag)li.dataset.tagKey=group.key;li.classList.toggle('folder-context',this.filter===group.id);li.setAttribute('aria-expanded',String(!this.collapsed.has(group.id)));const arrow=document.createElement('span');arrow.className='tree-chevron';arrow.textContent=this.collapsed.has(group.id)?'›':'⌄';arrow.setAttribute('aria-hidden','true');const count=document.createElement('span');count.className='tag-note-count';count.textContent=group.members?.size||'';row.append(arrow,icon(group.tag?'tag':'folder'),label);if(group.tag)row.append(count);}treeControls(row,{tag:!!li.dataset.tagKey});li.append(row);fragment.append(li);
+   else{li.dataset.folderId=group.id;if(group.tag)li.dataset.tagKey=group.key;li.classList.toggle('folder-context',this.filter===group.id);li.setAttribute('aria-expanded',String(!this.collapsed.has(group.id)));const arrow=document.createElement('span');arrow.className='tree-chevron';arrow.textContent='›';arrow.setAttribute('aria-hidden','true');const count=document.createElement('span');count.className='tag-note-count';count.textContent=group.members?.size||'';let glyph=icon(group.tag?'tag':'folder');if(!group.tag&&group.emoji){glyph=document.createElement('span');glyph.className='tree-emoji';glyph.textContent=group.emoji;glyph.setAttribute('aria-hidden','true');}row.append(arrow,glyph,label);if(group.tag)row.append(count);}treeControls(row,{tag:!!li.dataset.tagKey});li.append(row);fragment.append(li);
   }
   fragment.append(spacer(Math.max(0,(this.total-end)*HEIGHT)));this.root.replaceChildren(fragment);
   if(!this.total){const empty=document.createElement('li');empty.className='empty-list';empty.setAttribute('role','none');empty.textContent=t(this.mode==='tags'?'Nessun tag. Aggiungilo dalle proprietà di una nota.':'Nessuna nota.');this.root.append(empty);}

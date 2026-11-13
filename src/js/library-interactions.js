@@ -43,7 +43,7 @@ export class LibraryInteractions {
  start(p){
   this.menu.close(false);this.pending=null;this.drag={...p,index:libraryIndex(this.state.notes,this.state.folders)};
   const item=(p.source.kind==='note'?this.drag.index.noteById:this.drag.index.folderById).get(p.source.id);if(!item)return this.cancel();
-  this.drag.name=item.title||item.name||t('Senza titolo');this.ghost.replaceChildren(icon(p.source.kind==='note'?'notes':'folder'));const label=document.createElement('strong');label.textContent=this.drag.name;this.hint=document.createElement('span');this.ghost.append(label,this.hint);this.ghost.hidden=false;
+  this.drag.name=item.title||item.name||t('Senza titolo');if(item.emoji){const glyph=document.createElement('span');glyph.className='tree-emoji';glyph.textContent=item.emoji;this.ghost.replaceChildren(glyph);}else this.ghost.replaceChildren(icon(p.source.kind==='note'?'notes':'folder'));const label=document.createElement('strong');label.textContent=this.drag.name;this.hint=document.createElement('span');this.ghost.append(label,this.hint);this.ghost.hidden=false;
   document.body.classList.add('library-dragging');this.root.querySelectorAll(`[data-${p.source.kind}-id="${p.source.id}"]`).forEach(el=>el.classList.add('drag-source'));
   try{this.root.setPointerCapture(p.id);}catch{}this.frame=requestAnimationFrame(()=>this.tick());
  }
